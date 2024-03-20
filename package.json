@@ -5,6 +5,7 @@
   "scripts": {
     "build": "tsup",
     "test": "vitest --run",
+    "typecheck": "tsc --noEmit",
     "prepublishOnly": "build"
   },
   "keywords": [
