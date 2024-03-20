@@ -51,7 +51,7 @@ const stream = seria.stringifyToStream(value);
 const result = await seria.parseStream(stream);
 ```
 
-If you serialize a value that contains any `Promise` you need to serialize using a stream or use `seria.stringifyWithPromises` which resolve all the promises.
+If you serialize a value that contains any `Promise` you need to serialize using a stream or use `seria.stringifyAsync` which resolve all the promises.
 
 ## Supported Data Types
 

@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest";
 import {
   stringify,
   stringifyToStream,
-  stringifyWithPromises,
+  stringifyAsync,
 } from "./stringify";
 import { parse, parseFromStream, internal_parseFromStream } from "./parse";
 
@@ -81,7 +81,7 @@ describe("Parse value", () => {
   });
 
   test("Parse resolved Promise", async () => {
-    const encoded = await stringifyWithPromises(
+    const encoded = await stringifyAsync(
       Promise.resolve("adios amigos")
     );
     const decoded = parse(encoded);
@@ -103,7 +103,7 @@ describe("Parse object", async () => {
       promise: Promise.resolve("adios amigos"),
     };
 
-    const json = await stringifyWithPromises(obj);
+    const json = await stringifyAsync(obj);
     const raw: any = parse(json);
 
     expect(raw.str).toStrictEqual("hello");
@@ -126,7 +126,7 @@ describe("Parse object", async () => {
       array: Promise.resolve([1, 2, 3]),
     };
 
-    const json = await stringifyWithPromises(promises);
+    const json = await stringifyAsync(promises);
     const decoded: any = parse(json);
 
     await expect(decoded.num).resolves.toStrictEqual(42);
@@ -135,6 +135,10 @@ describe("Parse object", async () => {
     await expect(decoded.undefined).resolves.toStrictEqual(undefined);
     await expect(decoded.array).resolves.toStrictEqual([1, 2, 3]);
   });
+
+  test("Parse array of promises", async () => {
+
+  })
 });
 
 type IndexableBuffer<T> = {

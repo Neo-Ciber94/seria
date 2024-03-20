@@ -1,7 +1,7 @@
 import {
   stringify,
   stringifyToStream,
-  stringifyWithPromises,
+  stringifyAsync,
 } from "./json/stringify";
 
 import { parse, parseFromStream } from "./json/parse";
@@ -9,7 +9,7 @@ import { parse, parseFromStream } from "./json/parse";
 export {
   stringify,
   stringifyToStream,
-  stringifyWithPromises,
+  stringifyAsync as stringifyAsync,
   parse,
   parseFromStream,
 };

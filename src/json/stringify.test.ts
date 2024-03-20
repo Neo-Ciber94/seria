@@ -2,7 +2,7 @@ import { describe, test, expect } from "vitest";
 import {
   stringify,
   stringifyToStream,
-  stringifyWithPromises,
+  stringifyAsync,
 } from "./stringify";
 
 describe("stringify value", () => {
@@ -116,14 +116,14 @@ describe("stringify value", () => {
       return 69;
     })();
 
-    const data = await stringifyWithPromises(promise);
+    const data = await stringifyAsync(promise);
     expect(JSON.parse(data)[0]).toStrictEqual(`"$@1"`);
     expect(JSON.parse(data)[1]).toStrictEqual("69");
   });
 
   test("stringify resolved promise", async () => {
     const promise = Promise.resolve(42);
-    const data = await stringifyWithPromises(promise);
+    const data = await stringifyAsync(promise);
     expect(JSON.parse(data)[0]).toStrictEqual(`"$@1"`);
     expect(JSON.parse(data)[1]).toStrictEqual("42");
   });
@@ -136,7 +136,7 @@ describe("stringify value", () => {
       })()
     );
 
-    const data = await stringifyWithPromises(promise);
+    const data = await stringifyAsync(promise);
     expect(JSON.parse(data)[0]).toStrictEqual(`"$@1"`);
     expect(JSON.parse(data)[1]).toStrictEqual("34");
   });

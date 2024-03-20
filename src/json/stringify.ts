@@ -24,7 +24,7 @@ export type Replacer = (value: any, context: Context) => string | undefined;
  * @param value The value to convert.
  * @param replacer A function that encode a custom value.
  * @returns The json string.
- * @throws If the promise contains any promise. Use `stringifyWithPromises` or `stringifyToStream`
+ * @throws If the promise contains any promise. Use `stringifyAsync` or `stringifyToStream`
  * to convert value with promises.
  */
 export function stringify(value: unknown, replacer?: Replacer) {
@@ -43,7 +43,7 @@ export function stringify(value: unknown, replacer?: Replacer) {
  * @param replacer A function that encode a custom value.
  * @returns The json string.
  */
-export async function stringifyWithPromises(
+export async function stringifyAsync(
   value: unknown,
   replacer?: Replacer
 ) {
@@ -68,7 +68,7 @@ export function stringifyToStream(value: unknown, replacer?: Replacer) {
         async onResolved({ data, id }) {
           const resolved = trackPromise(id, Promise.resolve(data));
 
-          // `stringifyWithPromises` with an initial `id`
+          // `stringifyAsync` with an initial `id`
           // We use the initial to set the promise on the correct array slot
           const { output, pendingPromises } = internal_serialize(resolved, {
             replacer,
