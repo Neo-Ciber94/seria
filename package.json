@@ -2,12 +2,19 @@
   "name": "seria",
   "version": "0.1.0",
   "description": "A library for serialize/deserialize beyond JSON",
+  "author": {
+    "name": "Freddy L."
+  },
   "scripts": {
     "build": "tsup",
     "test": "vitest --run",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "pnpm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Neo-Ciber94/seria"
   },
   "keywords": [
     "react",
