@@ -1,10 +1,11 @@
 {
   "name": "seria",
-  "version": "0.1.0",
+  "version": "0.1.0-beta",
   "description": "A library for serialize/deserialize beyond JSON",
   "scripts": {
     "build": "tsup",
     "test": "vitest --run",
+    "lint": "eslint src",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "build"
   },
@@ -18,10 +19,16 @@
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^20.10.5",
+    "@typescript-eslint/eslint-plugin": "^6.4.0",
     "blob-polyfill": "^7.0.20220408",
+    "eslint": "^8.0.1",
+    "eslint-config-standard-with-typescript": "^43.0.1",
+    "eslint-plugin-import": "^2.25.2",
+    "eslint-plugin-n": "^15.0.0 || ^16.0.0 ",
+    "eslint-plugin-promise": "^6.0.0",
     "jsdom": "^24.0.0",
     "tsup": "^8.0.2",
-    "typescript": "^5.3.3",
+    "typescript": "^5.4.2",
     "vitest": "^1.2.2"
   },
   "exports": {

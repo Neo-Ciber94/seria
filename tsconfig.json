@@ -21,6 +21,9 @@
         "outDir": "dist"
     },
     "include": [
-        "src"
+        "src",
+        "tsup.config.ts",
+        "setupTests.ts",
+        "vitest.config.mts"
     ]
 }
