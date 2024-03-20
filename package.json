@@ -7,7 +7,7 @@
     "test": "vitest --run",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "build"
+    "prepublishOnly": "pnpm run build"
   },
   "keywords": [
     "react",
