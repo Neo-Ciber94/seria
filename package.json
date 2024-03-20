@@ -1,0 +1,44 @@
+{
+  "name": "seria",
+  "version": "0.1.0",
+  "description": "A library for serialize/deserialize beyond JSON",
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest --run",
+    "prepublishOnly": "build"
+  },
+  "keywords": [
+    "react",
+    "json",
+    "form-data",
+    "server",
+    "client"
+  ],
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "blob-polyfill": "^7.0.20220408",
+    "jsdom": "^24.0.0",
+    "tsup": "^8.0.2",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.2"
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "import": "./dist/index.js",
+      "default": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./form-data": {
+      "import": "./dist/form-data/index.js",
+      "default": "./dist/form-data/index.js",
+      "types": "./dist/form-data.d/index.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "./package.json"
+  ]
+}
