@@ -244,7 +244,7 @@ function serializeBigInt(input: bigint) {
 }
 
 function serializeDate(input: Date) {
-  return serializeTagValue(Tag.Date, input.toISOString());
+  return serializeTagValue(Tag.Date, input.toJSON());
 }
 
 function serializeArray(input: Array<any>, context: Context) {

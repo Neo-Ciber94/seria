@@ -58,7 +58,8 @@ describe("stringify value", () => {
 
   test("stringify date", async () => {
     const data = stringify(new Date(2024, 2, 15, 20, 35, 15));
-    expect(JSON.parse(data)[0]).toStrictEqual(`"$D2024-03-16T00:35:15.000Z"`);
+    const isoDate = new Date(2024, 2, 15, 20, 35, 15).toJSON();
+    expect(JSON.parse(data)[0]).toStrictEqual(`"$D${isoDate}"`);
   });
 
   test("stringify symbol", async () => {

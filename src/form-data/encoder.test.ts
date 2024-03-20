@@ -54,7 +54,8 @@ describe("Encode value", () => {
 
   test("Encode date", async () => {
     const value = await encodeToFormData(new Date(2024, 2, 15, 20, 35, 15));
-    expect(value.get("0")).toStrictEqual(`"$D2024-03-16T00:35:15.000Z"`);
+    const isoDate = new Date(2024, 2, 15, 20, 35, 15).toJSON();
+    expect(value.get("0")).toStrictEqual(`"$D${isoDate}"`);
   });
 
   test("Encode symbol", async () => {
