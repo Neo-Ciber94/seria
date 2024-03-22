@@ -12,6 +12,7 @@ type Context = {
   output: string[];
   referencesMap: Map<number, string>;
   pendingPromisesMap: Map<number, TrackingPromise<any>>;
+  space?: string | number;
   nextId: () => number;
   serializeToString: (input: any) => string;
   encodeValue: (input: any) => unknown;
@@ -23,46 +24,67 @@ export type Replacer = (value: any, context: Context) => string | undefined;
  * Converts a value to a json string.
  * @param value The value to convert.
  * @param replacer A function that encode a custom value.
+ * @param space Adds indentation, white space to the json values line-breaks.
  * @returns The json string.
  * @throws If the promise contains any promise. Use `stringifyAsync` or `stringifyToStream`
  * to convert value with promises.
  */
-export function stringify(value: unknown, replacer?: Replacer) {
-  const { output, pendingPromises } = internal_serialize(value, { replacer });
+export function stringify(
+  value: unknown,
+  replacer?: Replacer | null,
+  space?: number | string
+) {
+  const { output, pendingPromises } = internal_serialize(value, {
+    replacer,
+    space,
+  });
 
   if (pendingPromises.length > 0) {
     throw new Error("Serialiation result have pending promises");
   }
 
-  return JSON.stringify(output);
+  return JSON.stringify(output, null, space);
 }
 
 /**
  * Converts a value to a json string and resolve all its promises.
  * @param value The value to convert.
  * @param replacer A function that encode a custom value.
+ * @param space Adds indentation, white space to the json values line-breaks.
  * @returns The json string.
  */
 export async function stringifyAsync(
   value: unknown,
-  replacer?: Replacer
+  replacer?: Replacer | null,
+  space?: number | string
 ) {
-  const { output, pendingPromises } = internal_serialize(value, { replacer });
+  const { output, pendingPromises } = internal_serialize(value, {
+    replacer,
+    space,
+  });
   await Promise.all(pendingPromises);
-  return JSON.stringify(output);
+  return JSON.stringify(output, null, space);
 }
 
 /**
  * Convert a value to a `ReadableStream` that stringify each value.
  * @param value The value to convert.
  * @param replacer A function that encode a custom value.
+ * @param space Adds indentation, white space to the json values line-breaks.
  * @returns A stream that stringify each value.
  */
-export function stringifyToStream(value: unknown, replacer?: Replacer) {
-  const { output, pendingPromises } = internal_serialize(value, { replacer });
+export function stringifyToStream(
+  value: unknown,
+  replacer?: Replacer | null,
+  space?: number | string
+) {
+  const { output, pendingPromises } = internal_serialize(value, {
+    replacer,
+    space,
+  });
   return new ReadableStream<string>({
     async start(controller) {
-      controller.enqueue(JSON.stringify(output));
+      controller.enqueue(JSON.stringify(output, null, space));
 
       await forEachPromise(pendingPromises, {
         async onResolved({ data, id }) {
@@ -76,8 +98,7 @@ export function stringifyToStream(value: unknown, replacer?: Replacer) {
           });
 
           await Promise.all(pendingPromises);
-          const str = JSON.stringify(output);
-          controller.enqueue(str);
+          controller.enqueue(JSON.stringify(output, null, space));
         },
       });
 
@@ -91,9 +112,13 @@ export function stringifyToStream(value: unknown, replacer?: Replacer) {
  */
 export function internal_serialize(
   value: unknown,
-  opts: { replacer?: Replacer; initialID?: number }
+  opts: {
+    replacer?: Replacer | null;
+    initialID?: number;
+    space?: number | string;
+  }
 ) {
-  const { replacer, initialID = 1 } = opts;
+  const { replacer, space, initialID = 1 } = opts;
   const referencesMap = new Map<number, string>();
   const pendingPromisesMap = new Map<number, TrackingPromise<any>>();
   const output: string[] = [];
@@ -107,6 +132,7 @@ export function internal_serialize(
     output,
     referencesMap,
     pendingPromisesMap,
+    space,
     nextId,
     serializeToString,
     encodeValue,
@@ -200,7 +226,7 @@ export function internal_serialize(
   // The encoded value should be able to be decoded back with JSON.parse
   function serializeToString(input: any): string {
     const value = encodeValue(input);
-    return JSON.stringify(value);
+    return JSON.stringify(value, null, space);
   }
 
   // The base value contains all the references ids
@@ -266,7 +292,7 @@ function serializeSet(input: Set<any>, context: Context) {
   }
 
   const id = context.nextId();
-  referencesMap.set(id, JSON.stringify(items));
+  referencesMap.set(id, JSON.stringify(items, null, context.space));
   return serializeTagValue(Tag.Set, id);
 }
 
@@ -281,7 +307,7 @@ function serializeMap(input: Map<any, any>, context: Context) {
   }
 
   const id = context.nextId();
-  referencesMap.set(id, JSON.stringify(items));
+  referencesMap.set(id, JSON.stringify(items, null, context.space));
   return serializeTagValue(Tag.Map, id);
 }
 

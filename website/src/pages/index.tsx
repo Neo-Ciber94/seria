@@ -2,6 +2,7 @@ import Link from "@docusaurus/Link";
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import Layout from "@theme/Layout";
 import Heading from "@theme/Heading";
+import LiveExample from "../components/LiveExample";
 
 function HomepageHeader() {
   const { siteConfig } = useDocusaurusContext();
@@ -34,7 +35,9 @@ export default function Home() {
       description={siteConfig.tagline}
     >
       <HomepageHeader />
-      {/* <main></main> */}
+      <main>
+        <LiveExample />
+      </main>
     </Layout>
   );
 }

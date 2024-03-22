@@ -21,7 +21,7 @@ module.exports = {
     ecmaVersion: "latest",
     sourceType: "module",
     tsconfigRootDir: __dirname,
-    project: ["tsconfig.json"],
+    project: ["tsconfig.json", "website/tsconfig.json"],
   },
   rules: {
     "@typescript-eslint/no-floating-promises": "error",
