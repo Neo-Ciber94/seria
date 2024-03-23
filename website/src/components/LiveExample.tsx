@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, Fragment } from "react";
-import { createEditor, PrismEditor } from "prism-code-editor";
+import { createEditor, type PrismEditor } from "prism-code-editor";
 import * as seria from "seria";
 import { Listbox, Transition } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
@@ -13,7 +13,7 @@ const EDITOR_STYLES = {
   light: "",
 };
 
-Promise.all([loadTheme("github-dark"), loadTheme("github-light")]).then(
+void Promise.all([loadTheme("github-dark"), loadTheme("github-light")]).then(
   ([darkTheme, lightTheme]) => {
     EDITOR_STYLES.dark = darkTheme;
     EDITOR_STYLES.light = lightTheme;
@@ -78,7 +78,7 @@ export default function LiveExample() {
   }, [theme]);
 
   useEffect(() => {
-    (async () => {
+    void (async () => {
       try {
         const obj = safeEval(code);
 
@@ -95,6 +95,7 @@ export default function LiveExample() {
             break;
           }
         }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
         console.error(err);
         const message = err?.message ?? "Failed to stringify";
