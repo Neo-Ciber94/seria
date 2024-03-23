@@ -29,12 +29,15 @@ const INITIAL_CODE = `{
     ability: delay(1000).then(() => "Limitless")
 }`;
 
-type StringifyMode = "json.stringify" | "seria.stringify";
+type StringifyMode =
+  | "json.stringify"
+  | "seria.stringify"
+  | "seria.stringifyToStream";
 
 type StringifyOutput =
   | {
       state: "success";
-      json: string;
+      json: string | string[];
     }
   | {
       state: "error";
@@ -92,6 +95,24 @@ export default function LiveExample() {
             setStringifyOutput({ state: "loading" });
             const json = await seria.stringifyAsync(obj, null, 2);
             setStringifyOutput({ state: "success", json });
+            break;
+          }
+          case "seria.stringifyToStream": {
+            setStringifyOutput({ state: "loading" });
+            const chunks: string[] = [];
+            const reader = seria.stringifyToStream(obj, null, 2).getReader();
+
+            for (;;) {
+              const { done, value } = await reader.read();
+
+              if (done || value === undefined) {
+                break;
+              }
+
+              chunks.push(value);
+              setStringifyOutput({ state: "success", json: chunks });
+            }
+
             break;
           }
         }
@@ -153,9 +174,13 @@ function StringifyPreview({ result }: { result: StringifyOutput }) {
     case "success":
       return (
         <div className="p-4 bg-neutral-800 text-pink-400 rounded-lg w-full h-full min-h-[inherit]">
-          <pre className="bg-transparent">
-            <code className="text-wrap">{result.json}</code>
-          </pre>
+          {getArray(result.json).map((chunk, idx) => {
+            return (
+              <pre className="bg-transparent mb-0 pb-0" key={idx}>
+                <code className="text-wrap">{chunk}</code>
+              </pre>
+            );
+          })}
         </div>
       );
     // return (
@@ -178,6 +203,7 @@ function StringifyPreview({ result }: { result: StringifyOutput }) {
 
 const STRINGIFY_MODES = [
   { name: "seria.stringify", value: "seria.stringify" },
+  { name: "seria.stringifyToStream", value: "seria.stringifyToStream" },
   { name: "JSON.stringify", value: "json.stringify" },
 ] as const satisfies {
   name: string;
@@ -306,4 +332,8 @@ function safeEval(code: string) {
     `;
 
   return eval(scope);
+}
+
+function getArray<T>(value: T | T[]) {
+  return Array.isArray(value) ? value : [value];
 }
