@@ -1,9 +1,11 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Fragment, useCallback } from "react";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { a11yDark } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import { minimalEditor } from "prism-code-editor/setups";
 import "prism-code-editor/prism/languages/javascript";
 import * as seria from "seria";
+import { Listbox, Transition } from "@headlessui/react";
+import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
 
 const INITIAL_CODE = `{
     name: "Satoru Gojo",
@@ -14,16 +16,26 @@ const INITIAL_CODE = `{
     ability: delay(1000).then(() => "Limitless")
 }`;
 
-type StringifyMode = "json" | "seria";
+type StringifyMode = "json.stringify" | "seria.stringify";
+
+type StringifyOutput =
+  | {
+      state: "success";
+      json: string;
+    }
+  | {
+      state: "error";
+      message: string;
+    }
+  | {
+      state: "loading";
+    };
 
 export default function LiveExample() {
   const [code, setCode] = useState(INITIAL_CODE);
   const editorEl = useRef<HTMLDivElement>();
-  const [stringifyMode, setStringifyMode] = useState<StringifyMode>("seria");
-  const [stringifyResult, setStringifyResult] = useState<{
-    json: string;
-    success: boolean;
-  }>();
+  const [mode, setMode] = useState<StringifyMode>("seria.stringify");
+  const [stringifyOutput, setStringifyOutput] = useState<StringifyOutput>();
 
   useEffect(() => {
     if (!editorEl.current) {
@@ -49,26 +61,27 @@ export default function LiveExample() {
     (async () => {
       try {
         const obj = safeEval(code);
-        setStringifyResult({ json: "Resolving...", success: false });
 
-        const json = await (async function () {
-          switch (stringifyMode) {
-            case "json":
-              return JSON.stringify(obj, null, 2);
-            case "seria": {
-              return await seria.stringifyAsync(obj, null, 2);
-            }
+        switch (mode) {
+          case "json.stringify": {
+            const json = JSON.stringify(obj, null, 2);
+            setStringifyOutput({ state: "success", json });
+            break;
           }
-        })();
-
-        setStringifyResult({ json, success: true });
+          case "seria.stringify": {
+            setStringifyOutput({ state: "loading" });
+            const json = await seria.stringifyAsync(obj, null, 2);
+            setStringifyOutput({ state: "success", json });
+            break;
+          }
+        }
       } catch (err) {
         console.error(err);
-        const json = err?.message ?? "Failed to stringify";
-        setStringifyResult({ json, success: false });
+        const message = err?.message ?? "Failed to stringify";
+        setStringifyOutput({ state: "error", message });
       }
     })();
-  }, [code, stringifyMode]);
+  }, [code]);
 
   return (
     <div className="p-4">
@@ -79,63 +92,169 @@ export default function LiveExample() {
           <div ref={editorEl} className="w-full h-full" />
         </div>
 
-        <div className="w-full h-full">
+        <div className="w-full h-full ">
           <h2>Result</h2>
-          <select
-            value={stringifyMode}
-            onChange={(e) => {
-              setStringifyMode(e.target.value as StringifyMode);
-            }}
-          >
-            <option value="seria">seria.stringify</option>
-            <option value="json">JSON.stringify</option>
-          </select>
-          {stringifyResult && (
-            <StringifyPreview success={stringifyResult.success}>
-              {stringifyResult.json}
-            </StringifyPreview>
-          )}
+          <div className="relative w-full h-full">
+            <div className="absolute right-0 top-0">
+              <StringifyModeSelect value={mode} onChange={setMode} />
+            </div>
+
+            {stringifyOutput && <StringifyPreview result={stringifyOutput} />}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function StringifyPreview({
-  children,
-  success,
-}: {
-  children: string;
-  success: boolean;
-}) {
-  if (!success) {
-    return (
-      <div className="p-4 bg-neutral-800 text-red-500 font-mono">
-        {children}
-      </div>
-    );
+function StringifyPreview({ result }: { result: StringifyOutput }) {
+  switch (result.state) {
+    case "loading":
+      return (
+        <div className="px-4 py-10 bg-neutral-800 text-green-500 font-mono h-full w-full flex rounded-lg">
+          Resolving...
+        </div>
+      );
+    case "error":
+      return (
+        <div className="px-4 py-10 bg-neutral-800 text-red-500 font-mono h-full w-full rounded-lg">
+          {result.message}
+        </div>
+      );
+    case "success":
+      return (
+        <div className="p-4 bg-neutral-800 text-pink-400 rounded-lg">
+          <pre className="bg-transparent">
+            <code className="text-wrap">{result.json}</code>
+          </pre>
+        </div>
+      );
+    // return (
+    //   <SyntaxHighlighter
+    //     language={"json"}
+    //     style={a11yDark}
+    //     wrapLongLines
+    //     wrapLines
+    //     customStyle={{
+    //       height: "100%",
+    //       width: "100%",
+    //       paddingTop: 40,
+    //     }}
+    //   >
+    //     {data.json}
+    //   </SyntaxHighlighter>
+    // );
   }
+}
+
+const STRINGIFY_MODES = [
+  { name: "seria.stringify", value: "seria.stringify" },
+  { name: "JSON.stringify", value: "json.stringify" },
+] as const satisfies {
+  name: string;
+  value: StringifyMode;
+}[];
+
+function DisplayMode({ name }: { name: string }) {
+  const parts = name.split(".");
 
   return (
-    <SyntaxHighlighter
-      language={"json"}
-      style={a11yDark}
-      wrapLongLines
-      wrapLines
+    <>
+      <span className="font-bold text-pink-600">{parts[0]}</span>
+      {"."}
+      <span className="">{parts[1]}</span>
+    </>
+  );
+}
+
+function StringifyModeSelect({
+  value,
+  onChange,
+}: {
+  value: StringifyMode;
+  onChange: (value: StringifyMode) => void;
+}) {
+  const getModeName = (value: StringifyMode) =>
+    STRINGIFY_MODES.find((x) => x.value === value)?.name as string;
+
+  return (
+    <Listbox
+      value={value}
+      onChange={(e) => {
+        console.log(e);
+        onChange(e);
+      }}
     >
-      {children}
-    </SyntaxHighlighter>
+      <div className="relative mt-1 w-[240px]">
+        <Listbox.Button className="relative w-full cursor-default rounded-lg bg-white py-2 pl-3 pr-10 text-left shadow-md focus:outline-none focus-visible:border-indigo-500 focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-orange-300 sm:text-sm">
+          <span className="block truncate text-black font-mono">
+            <DisplayMode name={getModeName(value)} />
+          </span>
+          <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+            <ChevronUpDownIcon
+              className="h-5 w-5 text-gray-400"
+              aria-hidden="true"
+            />
+          </span>
+        </Listbox.Button>
+        <Transition
+          as={Fragment}
+          leave="transition ease-in duration-100"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <Listbox.Options
+            className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm pl-0"
+            style={{
+              listStyle: "none",
+            }}
+          >
+            {STRINGIFY_MODES.map((mode) => (
+              <Listbox.Option
+                key={mode.value}
+                value={mode.value}
+                className={({ active }) =>
+                  `relative cursor-default select-none py-2 pl-10 pr-4 ${
+                    active ? "bg-amber-100 text-amber-900" : "text-gray-900"
+                  }`
+                }
+              >
+                {({ selected }) => (
+                  <>
+                    <span
+                      className={`block truncate font-mono ${
+                        selected ? "font-medium" : "font-normal"
+                      }`}
+                    >
+                      <DisplayMode name={mode.name} />
+                    </span>
+                    {selected ? (
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-amber-600">
+                        <CheckIcon className="h-5 w-5" aria-hidden="true" />
+                      </span>
+                    ) : null}
+                  </>
+                )}
+              </Listbox.Option>
+            ))}
+          </Listbox.Options>
+        </Transition>
+      </div>
+    </Listbox>
   );
 }
 
 function safeEval(code: string) {
-  const varName = `w_${Math.ceil(Math.random() * 1000_000)}`;
-  console.log(varName);
+  if (typeof window === "undefined") {
+    throw new Error("Safe eval can only run on the browser");
+  }
+
+  const globalsVar = `w_${Math.ceil(Math.random() * 1000_000)}`;
   const scope = `
         // Save window objects for later restoration
-        const ${varName} = {};
-        ['fetch', 'alert', 'confirm', 'prompt', 'close', 'open', 'console', 'querySelector', 'querySelectorAll', 'getElementById', 'getElementsByClassName', 'getElementsByTagName'].forEach(prop => {
-            ${varName}[prop] = window[prop];
+        const ${globalsVar} = {};
+        ['alert', 'confirm', 'prompt', 'close', 'open', 'console', 'querySelector', 'querySelectorAll', 'getElementById', 'getElementsByClassName', 'getElementsByTagName'].forEach(prop => {
+            ${globalsVar}[prop] = window[prop];
             delete window[prop];
         });
 
@@ -148,8 +267,8 @@ function safeEval(code: string) {
                 return (${code})
             } finally {
                 // Restore window objects
-                Object.keys(${varName}).forEach(prop => {
-                    window[prop] = ${varName}[prop];
+                Object.keys(${globalsVar}).forEach(prop => {
+                    window[prop] = ${globalsVar}[prop];
                 });
             }
         })()
