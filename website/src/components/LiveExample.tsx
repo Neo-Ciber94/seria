@@ -113,22 +113,25 @@ export default function LiveExample() {
         }}
       ></style>
       <h1 className="text-center mb-0">Try out seria serialization!</h1>
-      <div className="p-2 flex flex-col 2xl:flex-row w-full h-full gap-2">
+      <div className="p-2 flex flex-col xl:flex-row w-full h-full gap-2">
         <div className="w-full h-full">
           <h2>Javascript</h2>
           <div className="w-full h-full border border-gray-400 shadow rounded-lg overflow-hidden">
-            <div ref={editorContainerRef} className="w-[600px] h-[300px]" />
+            <div
+              ref={editorContainerRef}
+              className="w-full xl:w-[600px] xl:h-[300px]"
+            />
           </div>
         </div>
 
         <div className="w-full h-full ">
           <h2>Result</h2>
-          <div className="relative w-full h-full">
+          <div className="relative w-full xl:w-[600px] xl:h-[300px]">
             <div className="absolute right-0 top-0">
               <StringifyModeSelect value={mode} onChange={setMode} />
             </div>
 
-            <div className="w-[600px] h-[300px]">
+            <div className="w-full h-full">
               {stringifyOutput && <StringifyPreview result={stringifyOutput} />}
             </div>
           </div>

@@ -27,7 +27,7 @@ function Hero() {
         </Link>
       </div>
 
-      <div className="text-white bg-black/30 py-8 px-2 rounded-lg mt-10 mb-2 mx-auto max-w-7xl">
+      <div className="text-white bg-black/30 py-8 px-2 rounded-lg mt-10 mb-2 mx-auto xl:max-w-7xl w-full">
         <LiveExample />
       </div>
     </section>

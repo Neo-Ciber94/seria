@@ -34,5 +34,5 @@
 }
 
 .prism-code-editor {
-  @apply w-[600px] h-[300px];
+  @apply w-full xl:w-[600px] xl:h-[300px];
 }
