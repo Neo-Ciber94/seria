@@ -1,6 +1,4 @@
 import { useState, useRef, useEffect, Fragment } from "react";
-import SyntaxHighlighter from "react-syntax-highlighter";
-import { a11yDark } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import { createEditor, PrismEditor } from "prism-code-editor";
 import * as seria from "seria";
 import { Listbox, Transition } from "@headlessui/react";
