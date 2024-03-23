@@ -116,24 +116,19 @@ export default function LiveExample() {
       <div className="p-2 flex flex-col xl:flex-row w-full h-full gap-2">
         <div className="w-full h-full">
           <h2>Javascript</h2>
-          <div className="w-full h-full border border-gray-400 shadow rounded-lg overflow-hidden">
-            <div
-              ref={editorContainerRef}
-              className="w-full xl:w-[600px] xl:h-[300px]"
-            />
+          <div className="w-full h-full xl:w-[600px] xl:min-h-[300px] border border-gray-400 shadow rounded-lg overflow-hidden">
+            <div ref={editorContainerRef} />
           </div>
         </div>
 
-        <div className="w-full h-full ">
+        <div className="w-full h-full">
           <h2>Result</h2>
-          <div className="relative w-full xl:w-[600px] xl:h-[300px]">
+          <div className="relative w-full xl:w-[600px] xl:min-h-[300px] h-full">
             <div className="absolute right-0 top-0">
               <StringifyModeSelect value={mode} onChange={setMode} />
             </div>
 
-            <div className="w-full h-full">
-              {stringifyOutput && <StringifyPreview result={stringifyOutput} />}
-            </div>
+            {stringifyOutput && <StringifyPreview result={stringifyOutput} />}
           </div>
         </div>
       </div>
@@ -145,19 +140,19 @@ function StringifyPreview({ result }: { result: StringifyOutput }) {
   switch (result.state) {
     case "loading":
       return (
-        <div className="px-4 py-10 bg-neutral-800 text-green-500 font-mono h-full w-full flex rounded-lg">
+        <div className="px-4 py-10 bg-neutral-800 text-green-500 font-mono h-full w-full flex rounded-lg min-h-[inherit]">
           Resolving...
         </div>
       );
     case "error":
       return (
-        <div className="px-4 py-10 bg-neutral-800 text-red-500 font-mono h-full w-full rounded-lg">
+        <div className="px-4 py-10 bg-neutral-800 text-red-500 font-mono h-full w-full rounded-lg min-h-[inherit]">
           {result.message}
         </div>
       );
     case "success":
       return (
-        <div className="p-4 bg-neutral-800 text-pink-400 rounded-lg w-full h-full">
+        <div className="p-4 bg-neutral-800 text-pink-400 rounded-lg w-full h-full min-h-[inherit]">
           <pre className="bg-transparent">
             <code className="text-wrap">{result.json}</code>
           </pre>
