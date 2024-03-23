@@ -93,7 +93,6 @@ export default function LiveExample() {
           case "seria.stringify": {
             setStringifyOutput({ state: "loading" });
             const json = await seria.stringifyAsync(obj, null, 2);
-            
             setStringifyOutput({ state: "success", json });
             break;
           }
