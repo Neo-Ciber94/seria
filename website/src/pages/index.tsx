@@ -17,7 +17,7 @@ function Hero() {
       </div>
       <div className="mt-10 text-center">
         <Link
-          className="bg-black py-2 px-10 lg:px-32 rounded-lg !text-white font-bold text-xl lg:text-lg hover:bg-neutral-800"
+          className="bg-black py-2 px-10 lg:px-32 rounded-lg !text-white font-bold text-base lg:text-xl hover:bg-neutral-800"
           to="/docs/intro"
           style={{
             textDecoration: "none",
