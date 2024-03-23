@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, Fragment, useCallback } from "react";
+import { useState, useRef, useEffect, Fragment } from "react";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { a11yDark } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import { minimalEditor } from "prism-code-editor/setups";
@@ -6,6 +6,7 @@ import "prism-code-editor/prism/languages/javascript";
 import * as seria from "seria";
 import { Listbox, Transition } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
+import { useTheme } from "../hooks/useTheme";
 
 const INITIAL_CODE = `{
     name: "Satoru Gojo",
@@ -36,17 +37,18 @@ export default function LiveExample() {
   const editorEl = useRef<HTMLDivElement>();
   const [mode, setMode] = useState<StringifyMode>("seria.stringify");
   const [stringifyOutput, setStringifyOutput] = useState<StringifyOutput>();
+  const theme = useTheme();
 
   useEffect(() => {
     if (!editorEl.current) {
       return;
     }
 
-    minimalEditor(
+    const prismEditor = minimalEditor(
       editorEl.current,
       {
         language: "javascript",
-        theme: "github-dark",
+        theme: theme === "dark" ? "github-dark" : "github-light",
         value: code,
         lineNumbers: false,
         onUpdate(value) {
@@ -55,7 +57,11 @@ export default function LiveExample() {
       },
       () => console.log("ready")
     );
-  }, []);
+
+    return () => {
+      prismEditor.remove();
+    };
+  }, [theme]);
 
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -82,7 +88,7 @@ export default function LiveExample() {
         setStringifyOutput({ state: "error", message });
       }
     })();
-  }, [code]);
+  }, [code, mode]);
 
   return (
     <div className="p-4">
@@ -90,7 +96,9 @@ export default function LiveExample() {
       <div className="p-4 flex flex-col lg:flex-row w-full h-full gap-2">
         <div className="w-full h-full">
           <h2>Javascript</h2>
-          <div ref={editorEl} className="w-full h-full" />
+          <div className="w-full h-full border border-gray-400 shadow rounded-lg overflow-hidden">
+            <div ref={editorEl} />
+          </div>
         </div>
 
         <div className="w-full h-full ">
@@ -187,8 +195,8 @@ function StringifyModeSelect({
       }}
     >
       <div className="relative mt-1 w-[240px]">
-        <Listbox.Button className="relative w-full cursor-default rounded-lg bg-white py-2 pl-3 pr-10 text-left shadow-md focus:outline-none focus-visible:border-indigo-500 focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-orange-300 sm:text-sm">
-          <span className="block truncate text-black font-mono">
+        <Listbox.Button className="relative w-full cursor-default rounded-lg bg-white dark:bg-neutral-900 py-2 pl-3 pr-10 text-left shadow-md focus:outline-none focus-visible:border-indigo-500 focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-orange-300 sm:text-sm">
+          <span className="block truncate text-black dark:text-white font-mono">
             <DisplayMode name={getModeName(value)} />
           </span>
           <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
@@ -205,7 +213,7 @@ function StringifyModeSelect({
           leaveTo="opacity-0"
         >
           <Listbox.Options
-            className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm pl-0"
+            className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md dark:bg-neutral-900 bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm pl-0"
             style={{
               listStyle: "none",
             }}
@@ -216,21 +224,23 @@ function StringifyModeSelect({
                 value={mode.value}
                 className={({ active }) =>
                   `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                    active ? "bg-amber-100 text-amber-900" : "text-gray-900"
+                    active
+                      ? "bg-indigo-200 dark:bg-neutral-700 text-indigo-900"
+                      : "text-gray-900"
                   }`
                 }
               >
                 {({ selected }) => (
                   <>
                     <span
-                      className={`block truncate font-mono ${
+                      className={`block truncate font-mono dark:text-white ${
                         selected ? "font-medium" : "font-normal"
                       }`}
                     >
                       <DisplayMode name={mode.name} />
                     </span>
                     {selected ? (
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-amber-600">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-indigo-500">
                         <CheckIcon className="h-5 w-5" aria-hidden="true" />
                       </span>
                     ) : null}
