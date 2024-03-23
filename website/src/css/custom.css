@@ -32,3 +32,7 @@
   --ifm-color-primary-lightest: #e9e5f9;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
+
+.prism-code-editor {
+  @apply w-[600px] h-[300px];
+}

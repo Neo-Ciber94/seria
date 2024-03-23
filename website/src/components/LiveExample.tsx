@@ -1,12 +1,26 @@
 import { useState, useRef, useEffect, Fragment } from "react";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { a11yDark } from "react-syntax-highlighter/dist/esm/styles/hljs";
-import { minimalEditor } from "prism-code-editor/setups";
-import "prism-code-editor/prism/languages/javascript";
+import { createEditor, PrismEditor } from "prism-code-editor";
 import * as seria from "seria";
 import { Listbox, Transition } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
 import { useTheme } from "../hooks/useTheme";
+import { loadTheme } from "prism-code-editor/themes";
+import "prism-code-editor/prism/languages/javascript";
+import "prism-code-editor/layout.css";
+
+const EDITOR_STYLES = {
+  dark: "",
+  light: "",
+};
+
+Promise.all([loadTheme("github-dark"), loadTheme("github-light")]).then(
+  ([darkTheme, lightTheme]) => {
+    EDITOR_STYLES.dark = darkTheme;
+    EDITOR_STYLES.light = lightTheme;
+  }
+);
 
 const INITIAL_CODE = `{
     name: "Satoru Gojo",
@@ -34,32 +48,34 @@ type StringifyOutput =
 
 export default function LiveExample() {
   const [code, setCode] = useState(INITIAL_CODE);
-  const editorEl = useRef<HTMLDivElement>();
+  const editorContainerRef = useRef<HTMLDivElement>();
+  const editorRef = useRef<PrismEditor>();
   const [mode, setMode] = useState<StringifyMode>("seria.stringify");
   const [stringifyOutput, setStringifyOutput] = useState<StringifyOutput>();
   const theme = useTheme();
 
   useEffect(() => {
-    if (!editorEl.current) {
+    if (!editorContainerRef.current) {
       return;
     }
 
-    const prismEditor = minimalEditor(
-      editorEl.current,
+    editorRef.current = createEditor(
+      editorContainerRef.current,
       {
         language: "javascript",
-        theme: theme === "dark" ? "github-dark" : "github-light",
         value: code,
         lineNumbers: false,
         onUpdate(value) {
           setCode(value);
         },
       },
-      () => console.log("ready")
+      () => console.log("editor ready")
     );
 
     return () => {
-      prismEditor.remove();
+      if (editorRef.current) {
+        editorRef.current.remove();
+      }
     };
   }, [theme]);
 
@@ -91,13 +107,19 @@ export default function LiveExample() {
   }, [code, mode]);
 
   return (
-    <div className="p-4">
-      <h1 className="text-center">Try out seria serialization!</h1>
-      <div className="p-4 flex flex-col lg:flex-row w-full h-full gap-2">
+    <div>
+      <style
+        id="editor-theme"
+        dangerouslySetInnerHTML={{
+          __html: theme === "dark" ? EDITOR_STYLES.dark : EDITOR_STYLES.light,
+        }}
+      ></style>
+      <h1 className="text-center mb-0">Try out seria serialization!</h1>
+      <div className="p-2 flex flex-col 2xl:flex-row w-full h-full gap-2">
         <div className="w-full h-full">
           <h2>Javascript</h2>
           <div className="w-full h-full border border-gray-400 shadow rounded-lg overflow-hidden">
-            <div ref={editorEl} />
+            <div ref={editorContainerRef} className="w-[600px] h-[300px]" />
           </div>
         </div>
 
@@ -108,7 +130,9 @@ export default function LiveExample() {
               <StringifyModeSelect value={mode} onChange={setMode} />
             </div>
 
-            {stringifyOutput && <StringifyPreview result={stringifyOutput} />}
+            <div className="w-[600px] h-[300px]">
+              {stringifyOutput && <StringifyPreview result={stringifyOutput} />}
+            </div>
           </div>
         </div>
       </div>
@@ -132,7 +156,7 @@ function StringifyPreview({ result }: { result: StringifyOutput }) {
       );
     case "success":
       return (
-        <div className="p-4 bg-neutral-800 text-pink-400 rounded-lg">
+        <div className="p-4 bg-neutral-800 text-pink-400 rounded-lg w-full h-full">
           <pre className="bg-transparent">
             <code className="text-wrap">{result.json}</code>
           </pre>
@@ -195,7 +219,7 @@ function StringifyModeSelect({
       }}
     >
       <div className="relative mt-1 w-[240px]">
-        <Listbox.Button className="relative w-full cursor-default rounded-lg bg-white dark:bg-neutral-900 py-2 pl-3 pr-10 text-left shadow-md focus:outline-none focus-visible:border-indigo-500 focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-orange-300 sm:text-sm">
+        <Listbox.Button className="relative border-none w-full cursor-default rounded-lg bg-white dark:bg-neutral-900 py-2 pl-3 pr-10 text-left shadow-md focus:outline-none focus-visible:border-indigo-500 focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-orange-300 sm:text-sm">
           <span className="block truncate text-black dark:text-white font-mono">
             <DisplayMode name={getModeName(value)} />
           </span>

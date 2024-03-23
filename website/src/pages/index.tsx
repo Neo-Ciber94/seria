@@ -1,28 +1,36 @@
 import Link from "@docusaurus/Link";
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import Layout from "@theme/Layout";
-import Heading from "@theme/Heading";
 import LiveExample from "../components/LiveExample";
 
-function HomepageHeader() {
+function Hero() {
   const { siteConfig } = useDocusaurusContext();
   return (
-    <header className="hero hero--primary py-36 text-center relative overflow-hidden md:py-16">
-      <div className="container">
-        <Heading as="h1" className="hero__title">
+    <section className="pattern-cross pattern-indigo-500 pattern-bg-indigo-600 pattern-size-8 pattern-opacity-100 py-10 sm:pt-20 px-4 h-full flex-grow flex flex-col gap-2">
+      <div>
+        <h1 className="text-white text-center text-3xl lg:text-5xl">
           {siteConfig.title}
-        </Heading>
-        <p className="hero__subtitle">{siteConfig.tagline}</p>
-        <div className="flex items-center justify-center">
-          <Link
-            className="button button--secondary button--lg"
-            to="/docs/intro"
-          >
-            Getting Started
-          </Link>
-        </div>
+        </h1>
+        <h3 className="text-white text-center text-xl lg:text-3xl">
+          {siteConfig.tagline}
+        </h3>
       </div>
-    </header>
+      <div className="mt-10 text-center">
+        <Link
+          className="bg-black py-2 px-10 lg:px-32 rounded-lg !text-white font-bold text-xl lg:text-lg hover:bg-neutral-800"
+          to="/docs/intro"
+          style={{
+            textDecoration: "none",
+          }}
+        >
+          Getting Started
+        </Link>
+      </div>
+
+      <div className="text-white bg-black/30 py-8 px-2 rounded-lg mt-10 mb-2 mx-auto max-w-7xl">
+        <LiveExample />
+      </div>
+    </section>
   );
 }
 
@@ -34,10 +42,7 @@ export default function Home() {
       title={"Serialization beyond JSON"}
       description={siteConfig.tagline}
     >
-      <HomepageHeader />
-      <main>
-        <LiveExample />
-      </main>
+      <Hero />
     </Layout>
   );
 }
