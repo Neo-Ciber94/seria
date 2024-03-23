@@ -1,5 +1,4 @@
 module.exports = {
-  root: true,
   env: {
     browser: true,
     es2021: true,
@@ -9,13 +8,14 @@ module.exports = {
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
     "plugin:react/recommended",
+    "plugin:react/jsx-runtime",
   ],
   overrides: [
     {
       env: {
         node: true,
       },
-      files: [".eslintrc.{js,cjs,mjs}"],
+      files: [".eslintrc.{js,cjs}"],
       parserOptions: {
         sourceType: "script",
       },
@@ -28,7 +28,7 @@ module.exports = {
     tsconfigRootDir: __dirname,
     project: ["./tsconfig.json", "./website/tsconfig.json"],
   },
-  plugins: ["react"],
+  plugins: ["@typescript-eslint", "react"],
   rules: {
     "@typescript-eslint/no-floating-promises": "error",
     "@typescript-eslint/consistent-type-imports": "error",

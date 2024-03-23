@@ -58,6 +58,7 @@ export default function LiveExample() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     (async () => {
       try {
         const obj = safeEval(code);
@@ -75,7 +76,7 @@ export default function LiveExample() {
             break;
           }
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error(err);
         const message = err?.message ?? "Failed to stringify";
         setStringifyOutput({ state: "error", message });
