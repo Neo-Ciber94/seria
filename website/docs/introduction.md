@@ -4,6 +4,8 @@ sidebar_position: 0
 
 # Introduction
 
+## What is seria?
+
 `seria` is a spanish word pronunced as `/se-REE-ah/`.
 
 This is a serialization library that supports types not supported by the global `JSON` object, it allow serialize `Date`, `BigInt`, `Promise` and other types.
