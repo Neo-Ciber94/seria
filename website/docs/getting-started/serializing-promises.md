@@ -37,10 +37,10 @@ But when you are communicating between a server and client maybe you don't want 
 import { stringifyToStream } from "seria";
 
 const hero = {
-  name: Promise.resolve("Shoto Todoroki"),
-  quirk: Promise.resolve("Half-Cold Half-Hot"),
-  age: Promise.resolve(16),
-  heroName: delay(1000).then(() => Symbol.for("Shoto")),
+  name: Promise.resolve("Yu Takeyama"),
+  quirk: Promise.resolve("Gigantification"),
+  age: Promise.resolve(24),
+  heroName: delay(1000).then(() => Symbol.for("Mt. Lady")),
 };
 
 const stream = stringifyToStream(hero);
