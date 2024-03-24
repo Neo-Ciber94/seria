@@ -2,6 +2,6 @@
 sidebar_position: 2
 ---
 
-# Custom Types
+# 2. Streaming with SSE
 
 TODO
