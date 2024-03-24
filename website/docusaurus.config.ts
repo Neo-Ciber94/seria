@@ -45,6 +45,7 @@ const config: Config = {
     },
   ],
 
+  themes: ["@docusaurus/theme-live-codeblock"],
   presets: [
     [
       "classic",
@@ -54,14 +55,17 @@ const config: Config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            "https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/",
+            "https://github.com/Neo-Ciber94/seria/tree/docs-website/website/docs",
+          remarkPlugins: [
+            [require("@docusaurus/remark-plugin-npm2yarn"), { sync: true }],
+          ],
         },
         blog: {
           showReadingTime: true,
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            "https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/",
+            "https://github.com/Neo-Ciber94/seria/tree/docs-website/website/docs",
         },
         theme: {
           customCss: "./src/css/custom.css",
@@ -82,11 +86,10 @@ const config: Config = {
       items: [
         {
           type: "docSidebar",
-          sidebarId: "tutorialSidebar",
+          sidebarId: "docsSidebar",
           position: "left",
-          label: "Tutorial",
+          label: "Docs",
         },
-        { to: "/blog", label: "Blog", position: "left" },
         {
           href: "https://github.com/Neo-Ciber94",
           label: "GitHub",

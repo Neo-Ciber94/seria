@@ -35,6 +35,8 @@
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "3.1.1",
+    "@docusaurus/remark-plugin-npm2yarn": "^3.1.1",
+    "@docusaurus/theme-live-codeblock": "^3.1.1",
     "@docusaurus/tsconfig": "3.1.1",
     "@docusaurus/types": "3.1.1",
     "@types/react-syntax-highlighter": "^15.5.11",
