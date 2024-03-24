@@ -4,6 +4,8 @@ sidebar_position: 2
 
 # Installation
 
+## Installing seria
+
 ```bash npm2yarn
   npm install seria
 ```
