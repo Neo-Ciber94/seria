@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { Tag, isTypedArray } from "../tag";
+import { Tag, isTypedArrayTag } from "../tag";
 import { type Replacer, internal_serialize } from "../json/stringify";
 import { type Reviver } from "../json/parse";
 import { isPlainObject } from "../utils";
@@ -199,7 +199,7 @@ export function decodeFormData(value: FormData, reviver?: Reviver): unknown {
 
               return formData;
             }
-            case isTypedArray(tag[0]): {
+            case isTypedArrayTag(tag[0]): {
               return deserializeBuffer(tag[0], input, { references: value });
             }
             default:

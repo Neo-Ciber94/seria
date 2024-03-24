@@ -45,6 +45,6 @@ const TYPED_ARRAY_TAGS = [
   Tag.DataView,
 ];
 
-export function isTypedArray(tag: string): tag is Tag {
+export function isTypedArrayTag(tag: string): tag is Tag {
   return TYPED_ARRAY_TAGS.includes(tag as Tag);
 }

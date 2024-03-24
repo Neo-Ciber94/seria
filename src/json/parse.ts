@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { deferredPromise, type DeferredPromise } from "../deferredPromise";
-import { Tag, isTypedArray } from "../tag";
+import { Tag, isTypedArrayTag } from "../tag";
 import { isTrackingPromise, trackPromise } from "../trackingPromise";
 import { base64ToBuffer, isPlainObject } from "../utils";
 
@@ -251,7 +251,7 @@ function internal_parseValue(value: string, opts?: Options) {
                 throw new Error("Unable to resolve promise value");
               }
             }
-            case isTypedArray(tag[0]): {
+            case isTypedArrayTag(tag[0]): {
               return deserializeBuffer(tag[0], input, {
                 references,
               });
