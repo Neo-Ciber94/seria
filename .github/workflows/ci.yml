@@ -45,5 +45,5 @@ jobs:
       - name: "Deploy Docs"
         run: cd website && pnpm install && pnpm run deploy
         env:
-          GIT_USER: Neo-Ciber94
+          GIT_USER: github-actions[bot]
           GIT_PASS: ${{ secrets.GITHUB_TOKEN }}
