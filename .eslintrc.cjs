@@ -1,4 +1,5 @@
-module.exports = {
+/** @type {import("eslint").Linter.Config} */
+const config = {
   env: {
     browser: true,
     es2021: true,
@@ -21,12 +22,17 @@ module.exports = {
       },
     },
   ],
+  settings: {
+    react: {
+      version: "detect",
+    },
+  },
   parser: "@typescript-eslint/parser",
   parserOptions: {
     ecmaVersion: "latest",
     sourceType: "module",
     tsconfigRootDir: __dirname,
-    project: ["./tsconfig.json", "./website/tsconfig.json"],
+    project: ["./packages/**/tsconfig.json", "./website/tsconfig.json"],
   },
   plugins: ["@typescript-eslint", "react"],
   rules: {
@@ -43,3 +49,5 @@ module.exports = {
     ],
   },
 };
+
+module.exports = config;
