@@ -33,7 +33,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 8
       - name: "Deploy Docs"
+      - recursive: true
         run: cd website && pnpm install && pnpm run deploy
         env:
           GIT_USER: Neo-Ciber94
