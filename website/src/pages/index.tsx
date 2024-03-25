@@ -31,7 +31,7 @@ function Hero() {
         <BrowserOnly fallback={<div>Loading...</div>}>
           {() => {
             // eslint-disable-next-line @typescript-eslint/no-var-requires
-            const LiveExample = require("../components/LiveExample");
+            const LiveExample = require("../components/LiveExample").default;
             return <LiveExample />;
           }}
         </BrowserOnly>
