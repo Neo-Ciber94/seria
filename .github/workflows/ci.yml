@@ -47,12 +47,12 @@ jobs:
               - 'website/**'
 
       - name: Build Docs
-        if: ${{ needs.changes.outputs.website == 'true' }}
+        # if: ${{ needs.changes.outputs.website == 'true' }}
         run: cd website && pnpm install && pnpm run build
 
       - name: Deploy Docs
         uses: peaceiris/actions-gh-pages@v3
-        if: ${{ needs.changes.outputs.website == 'true' && github.ref == 'refs/heads/main' }}
+        # if: ${{ needs.changes.outputs.website == 'true' && github.ref == 'refs/heads/main' }}
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./website/build
