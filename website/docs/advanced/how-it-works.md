@@ -27,3 +27,17 @@ is just used to restore the object.
 Promises are represented as `$@<id>` following the previous format `@` is the tag we use for promises,
 the `id` is used to locate the result of the promise, when the promise is streamed and had not resolved
 the promise will wait until the next chunks are send and then we check again if the value for the id exists to resolve the promise.
+
+When the promise is streamed the data send have this format:
+
+```js
+"[chunk 1]"\n\n
+
+"[chunk 3]"\n\n
+
+"[chunk 2]"\n\n
+
+"[chunk 4]"\n\n
+```
+
+When deserializing we just split the incoming stream `\n\n` and then parse each value.

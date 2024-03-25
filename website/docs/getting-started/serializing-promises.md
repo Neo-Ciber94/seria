@@ -58,7 +58,3 @@ import { parseStream } from "seria";
 const stream = getStream();
 const value = await parseStream(stream);
 ```
-
-:::tip[What format use to send a stream?]
-To transfer a stream from a server/client you can try use SSE [(Server-Sent-Events)](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events).
-:::

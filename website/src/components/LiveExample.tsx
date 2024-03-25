@@ -176,7 +176,7 @@ function StringifyPreview({ result }: { result: StringifyOutput }) {
         <div className="p-4 bg-neutral-800 text-pink-400 rounded-lg w-full h-full min-h-[inherit]">
           {getArray(result.json).map((chunk, idx) => {
             return (
-              <pre className="bg-transparent mb-0 pb-0" key={idx}>
+              <pre className="bg-transparent my-0 py-0" key={idx}>
                 <code className="text-wrap">{chunk}</code>
               </pre>
             );

@@ -31,7 +31,7 @@ const input = {
 
 const json = stringify(input, (val) => {
   if (val instanceof URL) {
-    return `$1${val.href}`;
+    return `$1${val.href}`; // $1 is our custom tag for URL
   }
 
   return undefined;
@@ -44,7 +44,47 @@ if contains the tag we used, then we just need to stripped the tag and create th
 ```ts
 const value: any = parse(json, (val) => {
   if (typeof val === "string" && val.startsWith("$1")) {
-    return new URL(val.slice(2));
+    return new URL(val.slice(2)); // remove the tag $1
+  }
+
+  return undefined;
+});
+```
+
+
+### Serializing `RegExp`
+
+For RegExp we check if the value is an `RegExp` and then return a value in the format:
+
+```bash
+$<tag><data>
+```
+
+This is the format `seria` use to represents any non-serializable value like `RegExp` and the **tag** is used to look up the value.
+
+```ts
+const input = {
+  url: new URL("http://127.0.0.1:3000/seria?hello=world"),
+};
+
+const json = stringify(input, (val) => {
+  if (val instanceof RegExp) {
+    return `$2${val.toString()}`; // `$2` is our custom tag for RegExp
+  }
+
+  return undefined;
+});
+```
+
+And for parsing because the `string` value.
+
+```ts
+const value: any = parse(json, (val) => {
+  if (typeof val === "string" && val.startsWith("$2")) {
+      const parts = val.slice(2); // remove the tag $2
+      const body = parts.slice(1, parts.lastIndexOf("/"));
+      const flags = parts.slice(parts.lastIndexOf("/") + 1);
+      return new RegExp(body, flags);
   }
 
   return undefined;
