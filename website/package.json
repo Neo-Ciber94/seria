@@ -36,9 +36,11 @@
   "devDependencies": {
     "@docusaurus/module-type-aliases": "3.1.1",
     "@docusaurus/remark-plugin-npm2yarn": "^3.1.1",
+    "@docusaurus/theme-classic": "^3.1.1",
     "@docusaurus/theme-live-codeblock": "^3.1.1",
     "@docusaurus/tsconfig": "3.1.1",
     "@docusaurus/types": "3.1.1",
+    "@types/node": "^20.11.30",
     "@types/react-syntax-highlighter": "^15.5.11",
     "eslint": "^8.57.0",
     "tailwindcss-bg-patterns": "^0.3.0",
