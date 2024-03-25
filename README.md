@@ -1,8 +1,10 @@
-# Seria
+# Seria 
 
 Seria is a serialization and deserialization library that goes beyond the conventional capabilities of JSON. It provides seamless handling for various data types, including those that JSON cannot handle directly.
 
 > This library is inspired on the new serialization capabilities `react` provides for server actions.
+
+[Checkout the docs](https://neo-ciber94.github.io/seria/)
 
 ## Installation
 
@@ -17,6 +19,7 @@ yarn add seria
 ```bash
 pnpm add seria
 ```
+
 
 ## Usage
 
