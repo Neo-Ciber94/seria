@@ -23,13 +23,13 @@ jobs:
             - recursive: true
 
       - name: Check Types
-        run: cd website && pnpm install && cd .. && pnpm run typecheck
+        run: pnpm run -r typecheck 
 
       - name: Check formatting
-        run: pnpm run lint
+        run: pnpm run -r lint
 
       - name: Run Tests
-        run: pnpm run test
+        run: pnpm run -r test
 
   # Deploy docs
   deploy:
