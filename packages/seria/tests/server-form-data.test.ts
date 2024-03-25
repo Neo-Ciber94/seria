@@ -134,7 +134,13 @@ function readFileFromArtifacts(filePath: string) {
 }
 
 async function writeTempFile(filePath: string, file: File) {
-  const tempFilePath = path.join(__dirname, "temp", filePath);
+  const dir = path.join(__dirname, "temp");
+
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
+  const tempFilePath = path.join(dir, filePath);
   const buffer = await file.arrayBuffer();
   fs.writeFileSync(tempFilePath, Buffer.from(buffer));
 }
