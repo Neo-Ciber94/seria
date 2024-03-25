@@ -6,6 +6,9 @@ import { type Reviver } from "../json/parse";
 import { isPlainObject } from "../utils";
 import { base64ToBuffer } from "../utils";
 
+// The browser `FormData` is assignable to this one
+import type { FormData as UndiciFormData } from "undici";
+
 /**
  * Encode a value into a `FormData`.
  * @param value The value to encode.
@@ -54,13 +57,19 @@ export async function encodeToFormData(
 
 // Inspired on: https://github.com/facebook/react/blob/1293047d6063f3508af15e68cca916660ded791e/packages/react-server/src/ReactFlightReplyServer.js#L379-L380
 
-type Context = {
+type DecodeFormDataContext = {
   references: FormData;
 };
 
-type DecodeOptions = {
+type DecodeFormDataOptions = {
+  /**
+   * Custom type constructors to use.
+   */
   types?: {
-    FormData: typeof FormData;
+    /**
+     * `FormData` constructor, this defaults to `globalThis.FormData`.
+     */
+    FormData: typeof UndiciFormData;
   };
 };
 
@@ -73,7 +82,7 @@ type DecodeOptions = {
 export function decodeFormData(
   value: FormData,
   reviver?: Reviver | null,
-  opts?: DecodeOptions
+  opts?: DecodeFormDataOptions
 ): unknown {
   const { types } = opts || {};
   const { FormData: FormDataConstructor = globalThis.FormData } = types || {};
@@ -253,7 +262,11 @@ export function decodeFormData(
   return deserizalizeValue(baseValue);
 }
 
-function deserializeBuffer(tag: Tag, input: string, context: Context) {
+function deserializeBuffer(
+  tag: Tag,
+  input: string,
+  context: DecodeFormDataContext
+) {
   const getBufferData = () => {
     const id = input.slice(2);
     const data = context.references.get(id);

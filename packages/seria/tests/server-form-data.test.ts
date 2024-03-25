@@ -45,7 +45,6 @@ beforeAll(() => {
 
     const value = decodeFormData(formData as FormData, null, {
       types: {
-        // @ts-expect-error FIXME
         FormData: UndiciFormData,
       },
     }) as BocchiCharacter;
@@ -53,16 +52,10 @@ beforeAll(() => {
     // Update the mocked value
     mockCharacter = value;
 
-    for (const [_, entry] of value.photos.entries()) {
-      const file = entry as File;
-      console.log({
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        lastModified: file.lastModified,
-      });
-
-      await writeTempFile("bocchi.jpg", file as File);
+    for (const [_, file] of value.photos.entries()) {
+      if (typeof file === "object") {
+        await writeTempFile(file.name, file);
+      }
     }
 
     return c.json({ success: true });
@@ -100,7 +93,7 @@ describe("Server and client FormData", () => {
       photos: (() => {
         const f = new FormData();
         const file = readFileFromArtifacts("bocchi_tech_tips.jpg");
-        f.append("image_1", file);
+        f.append("image_1", file, "bocchi.jpg");
         return f;
       })(),
     };
