@@ -34,6 +34,6 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - name: "Deploy Docs"
-        run: cd website && pnpm run deploy
+        run: cd website && pnpm install && pnpm run deploy
         env:
           GIT_USER: Neo-Ciber94
