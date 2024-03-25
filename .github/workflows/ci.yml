@@ -37,7 +37,6 @@ jobs:
         with:
           version: 8
       - name: "Deploy Docs"
-      - recursive: true
         run: cd website && pnpm install && pnpm run deploy
         env:
           GIT_USER: Neo-Ciber94
