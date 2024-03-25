@@ -1,10 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, test } from "vitest";
-import {
-  stringify,
-  stringifyToStream,
-  stringifyAsync,
-} from "./stringify";
+import { stringify, stringifyToStream, stringifyAsync } from "./stringify";
 import { parse, parseFromStream, internal_parseFromStream } from "./parse";
 
 describe("Parse value", () => {
@@ -81,9 +77,7 @@ describe("Parse value", () => {
   });
 
   test("Parse resolved Promise", async () => {
-    const encoded = await stringifyAsync(
-      Promise.resolve("adios amigos")
-    );
+    const encoded = await stringifyAsync(Promise.resolve("adios amigos"));
     const decoded = parse(encoded);
     await expect(decoded).resolves.toStrictEqual("adios amigos");
   });
@@ -136,9 +130,7 @@ describe("Parse object", async () => {
     await expect(decoded.array).resolves.toStrictEqual([1, 2, 3]);
   });
 
-  test("Parse array of promises", async () => {
-
-  })
+  test("Parse array of promises", async () => {});
 });
 
 type IndexableBuffer<T> = {
@@ -388,6 +380,67 @@ describe("Parse stream", () => {
   });
 });
 
+describe("Parse promises", () => {
+  test("Parse stream for array of promises", async () => {
+    const arr = [
+      Promise.resolve("hello"),
+      Promise.resolve(new Set([1, 2, 3])),
+      delay(100).then(() => BigInt(120_000_000)),
+    ] as const;
+
+    const json = await stringifyAsync(arr);
+    const parsed = parse(json) as typeof arr;
+
+    await expect(parsed[0]).resolves.toStrictEqual("hello");
+    await expect(parsed[1]).resolves.toEqual(new Set([1, 2, 3]));
+    await expect(parsed[2]).resolves.toStrictEqual(120_000_000n);
+  });
+
+  test("Parse promises with complex types", async () => {
+    const obj = {
+      map: delay(40).then(
+        () =>
+          new Map([
+            ["fruit", "mango"],
+            ["color", "yellow"],
+          ])
+      ),
+      set: Promise.resolve(new Set(["fire", "water", "rock"])),
+      nested: Promise.resolve({
+        num: Promise.resolve(999n),
+        date: delay(1).then(() => new Date(0)),
+        obj_with_symbol: Promise.resolve({
+          symbol: delay(2).then(() => Symbol.for("this_is_a_promise")),
+        }),
+      }),
+    };
+
+    const json = await stringifyAsync(obj);
+    const parsed = parse(json) as typeof obj;
+
+    await expect(parsed.map).resolves.toEqual(
+      new Map([
+        ["fruit", "mango"],
+        ["color", "yellow"],
+      ])
+    );
+
+    await expect(parsed.set).resolves.toEqual(
+      new Set(["fire", "water", "rock"])
+    );
+
+    const nested = await parsed.nested;
+
+    await expect(nested.num).resolves.toStrictEqual(999n);
+    await expect(nested.date).resolves.toStrictEqual(new Date(0));
+
+    const obj_with_symbol = await nested.obj_with_symbol;
+    await expect(obj_with_symbol.symbol).resolves.toStrictEqual(
+      Symbol.for("this_is_a_promise")
+    );
+  });
+});
+
 describe("Custom parser with reviver and replacer", () => {
   test("Parse URL and regex", async () => {
     const obj = {
@@ -428,3 +481,6 @@ describe("Custom parser with reviver and replacer", () => {
     });
   });
 });
+
+const delay = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));

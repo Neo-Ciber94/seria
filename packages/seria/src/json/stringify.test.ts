@@ -1,9 +1,5 @@
 import { describe, test, expect } from "vitest";
-import {
-  stringify,
-  stringifyToStream,
-  stringifyAsync,
-} from "./stringify";
+import { stringify, stringifyToStream, stringifyAsync } from "./stringify";
 
 describe("stringify value", () => {
   test("stringify string", async () => {
@@ -109,7 +105,9 @@ describe("stringify value", () => {
     const data = stringify(obj);
     expect(JSON.parse(data)[0]).toStrictEqual(`{"x":"$$bear","y":23,"z":true}`);
   });
+});
 
+describe("stringify promise", () => {
   test("stringify promise", async () => {
     const promise = (async () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -205,5 +203,12 @@ describe("stringify value", () => {
     );
 
     expect((await reader.read()).done).toBeTruthy();
+  });
+
+  test("stringify promise with set", async () => {
+    const p = Promise.resolve(new Set([1, 2, 3]));
+    const json = await stringifyAsync(p);
+
+    expect(json).toStrictEqual(`["\\"$@1\\"","\\"$W2\\"","[1,2,3]"]`);
   });
 });

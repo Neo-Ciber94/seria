@@ -10,12 +10,13 @@ import { Tag } from "../tag";
 
 type Context = {
   output: string[];
-  referencesMap: Map<number, string>;
+  writtenValues: Map<number, string>;
   pendingPromisesMap: Map<number, TrackingPromise<any>>;
   space?: string | number;
   nextId: () => number;
   serializeToString: (input: any) => string;
   encodeValue: (input: any) => unknown;
+  checkWrittenValues: () => void;
 };
 
 export type Replacer = (value: any, context: Context) => string | undefined;
@@ -119,23 +120,32 @@ export function internal_serialize(
   }
 ) {
   const { replacer, space, initialID = 1 } = opts;
-  const referencesMap = new Map<number, string>();
+  const writtenValues = new Map<number, string>();
   const pendingPromisesMap = new Map<number, TrackingPromise<any>>();
   const output: string[] = [];
   let id = initialID;
 
+  // Get the next id
   const nextId = () => {
     return id++;
   };
 
+  // Update the references of the written values
+  const checkWrittenValues = () => {
+    for (const [id, value] of writtenValues) {
+      output[id] = value;
+    }
+  };
+
   const context: Context = {
     output,
-    referencesMap,
+    writtenValues,
     pendingPromisesMap,
     space,
     nextId,
     serializeToString,
     encodeValue,
+    checkWrittenValues,
   };
 
   function encodeValue(input: any) {
@@ -233,11 +243,7 @@ export function internal_serialize(
   const baseValue = serializeToString(value);
   output[0] = baseValue;
 
-  // Set each reference value
-  for (const [id, value] of referencesMap) {
-    output[id] = value;
-  }
-
+  checkWrittenValues();
   const pendingPromises = Array.from(pendingPromisesMap.values());
 
   return { output, pendingPromises };
@@ -284,7 +290,7 @@ function serializeArray(input: Array<any>, context: Context) {
 }
 
 function serializeSet(input: Set<any>, context: Context) {
-  const { referencesMap } = context;
+  const { writtenValues: referencesMap } = context;
   const items: unknown[] = [];
 
   for (const val of input) {
@@ -297,7 +303,7 @@ function serializeSet(input: Set<any>, context: Context) {
 }
 
 function serializeMap(input: Map<any, any>, context: Context) {
-  const { referencesMap } = context;
+  const { writtenValues: referencesMap } = context;
   const items: [unknown, unknown][] = [];
 
   for (const [k, v] of input) {
@@ -328,13 +334,15 @@ function serializePromise(input: Promise<any>, context: Context) {
   const id = context.nextId();
 
   // We create a new promise that resolve to the serialized value
-  void input.then((value) => {
+  const resolvingPromise = input.then((value) => {
     const ret = context.serializeToString(value);
-    context.referencesMap.set(id, ret);
     context.output[id] = ret;
+    context.writtenValues.set(id, ret);
+    context.checkWrittenValues(); // Update the values with the new one
+    return value;
   });
 
-  const trackingPromise = trackPromise(id, input);
+  const trackingPromise = trackPromise(id, resolvingPromise);
   context.pendingPromisesMap.set(id, trackingPromise);
   return serializeTagValue(Tag.Promise, id);
 }
@@ -349,7 +357,7 @@ function serializeResolvedPromise(
   switch (status.state) {
     case "resolved": {
       const ret = context.serializeToString(status.data);
-      context.referencesMap.set(id, ret);
+      context.writtenValues.set(id, ret);
       context.output[id] = status.data;
       break;
     }
@@ -372,7 +380,7 @@ function serializeTypedArray(
 ) {
   const id = context.nextId();
   const buffer = bufferToBase64(input.buffer);
-  context.referencesMap.set(id, buffer);
+  context.writtenValues.set(id, buffer);
   return serializeTagValue(tag, id);
 }
 
