@@ -11,9 +11,8 @@ import {
   stringifyToStream,
 } from "../src";
 import { stream } from "hono/streaming";
-// import { EventSourceParserStream } from "eventsource-parser/stream";
-// import { type ParsedEvent } from "eventsource-parser";
 
+const PORT = 5001;
 type Server = ReturnType<typeof serve>;
 
 let server: Server | undefined;
@@ -80,7 +79,7 @@ beforeAll(() => {
       {
         fetch: app.fetch,
         hostname: "127.0.0.1",
-        port: 3000,
+        port: PORT,
       },
       () => resolve()
     );
@@ -89,7 +88,7 @@ beforeAll(() => {
 
 describe("Server and client JSON", () => {
   test("Should parse server seria JSON", async () => {
-    const res = await fetch("http://127.0.0.1:3000/json");
+    const res = await fetch(`http://127.0.0.1:${PORT}/json`);
     const json = await res.text();
     const data = parse(json);
 
@@ -110,7 +109,7 @@ describe("Server and client JSON", () => {
   });
 
   test("Should send resolved promises", async () => {
-    const res = await fetch("http://127.0.0.1:3000/resend", {
+    const res = await fetch(`http://127.0.0.1:${PORT}/resend`, {
       method: "POST",
       body: await stringifyAsync({
         num: Promise.resolve(23),
@@ -134,7 +133,7 @@ describe("Server and client JSON", () => {
   });
 
   test("Should parse from ReadableStream", async () => {
-    const res = await fetch("http://127.0.0.1:3000/stream");
+    const res = await fetch(`http://127.0.0.1:${PORT}/stream`);
     const reader = res.body!;
 
     expect(reader).toBeTruthy();

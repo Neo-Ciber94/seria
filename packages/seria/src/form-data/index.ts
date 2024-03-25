@@ -58,13 +58,26 @@ type Context = {
   references: FormData;
 };
 
+type DecodeOptions = {
+  types?: {
+    FormData: typeof FormData;
+  };
+};
+
 /**
  * Decode a `FormData` into a value.
  * @param value The formData to decode.
  * @param reviver Converts a value.
  * @returns The decoded value.
  */
-export function decodeFormData(value: FormData, reviver?: Reviver): unknown {
+export function decodeFormData(
+  value: FormData,
+  reviver?: Reviver | null,
+  opts?: DecodeOptions
+): unknown {
+  const { types } = opts || {};
+  const { FormData: FormDataConstructor = globalThis.FormData } = types || {};
+
   const baseValue = (function () {
     const entry = value.get("0");
 
@@ -186,7 +199,7 @@ export function decodeFormData(value: FormData, reviver?: Reviver): unknown {
               }
             }
             case maybeTag[0] === Tag.FormData: {
-              const formData = new FormData();
+              const formData = new FormDataConstructor();
               const id = input.slice(2);
 
               value.forEach((entry, key) => {
