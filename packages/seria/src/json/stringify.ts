@@ -9,12 +9,11 @@ import { bufferToBase64, isPlainObject } from "../utils";
 import { Tag } from "../tag";
 
 type Context = {
-  output: string[];
-  writtenValues: Map<number, string>;
+  output: unknown[];
+  writtenValues: Map<number, unknown>;
   pendingPromisesMap: Map<number, TrackingPromise<any>>;
   space?: string | number;
   nextId: () => number;
-  serializeToString: (input: any) => string;
   encodeValue: (input: any) => unknown;
   checkWrittenValues: () => void;
 };
@@ -120,9 +119,9 @@ export function internal_serialize(
   }
 ) {
   const { replacer, space, initialID = 1 } = opts;
-  const writtenValues = new Map<number, string>();
+  const writtenValues = new Map<number, unknown>();
   const pendingPromisesMap = new Map<number, TrackingPromise<any>>();
-  const output: string[] = [];
+  const output: unknown[] = [];
   let id = initialID;
 
   // Get the next id
@@ -143,7 +142,6 @@ export function internal_serialize(
     pendingPromisesMap,
     space,
     nextId,
-    serializeToString,
     encodeValue,
     checkWrittenValues,
   };
@@ -233,14 +231,8 @@ export function internal_serialize(
     }
   }
 
-  // The encoded value should be able to be decoded back with JSON.parse
-  function serializeToString(input: any): string {
-    const value = encodeValue(input);
-    return JSON.stringify(value, null, space);
-  }
-
   // The base value contains all the references ids
-  const baseValue = serializeToString(value);
+  const baseValue = encodeValue(value);
   output[0] = baseValue;
 
   checkWrittenValues();
@@ -298,7 +290,7 @@ function serializeSet(input: Set<any>, context: Context) {
   }
 
   const id = context.nextId();
-  referencesMap.set(id, JSON.stringify(items, null, context.space));
+  referencesMap.set(id, items);
   return serializeTagValue(Tag.Set, id);
 }
 
@@ -313,7 +305,7 @@ function serializeMap(input: Map<any, any>, context: Context) {
   }
 
   const id = context.nextId();
-  referencesMap.set(id, JSON.stringify(items, null, context.space));
+  referencesMap.set(id, items);
   return serializeTagValue(Tag.Map, id);
 }
 
@@ -335,7 +327,7 @@ function serializePromise(input: Promise<any>, context: Context) {
 
   // We create a new promise that resolve to the serialized value
   const resolvingPromise = input.then((value) => {
-    const ret = context.serializeToString(value);
+    const ret = context.encodeValue(value);
     context.writtenValues.set(id, ret);
     context.checkWrittenValues(); // Update the values with the new one
     return value;
@@ -355,9 +347,9 @@ function serializeResolvedPromise(
 
   switch (status.state) {
     case "resolved": {
-      const ret = context.serializeToString(status.data);
+      const ret = context.encodeValue(status.data);
       context.writtenValues.set(id, ret);
-      context.output[id] = status.data;
+      context.checkWrittenValues(); // Update the values with the new one
       break;
     }
     case "rejected": {

@@ -5,7 +5,7 @@ import { isTrackingPromise, trackPromise } from "../trackingPromise";
 import { base64ToBuffer, isPlainObject } from "../utils";
 
 type Context = {
-  references: readonly string[];
+  references: readonly unknown[];
 };
 
 /**
@@ -133,9 +133,8 @@ function internal_parseValue(value: string, opts?: Options) {
   const pendingPromises = new Map<number, DeferredPromise<unknown>>();
   const { references, base } = (function () {
     try {
-      const references = JSON.parse(value) as readonly string[];
-      const base = JSON.parse(references[0]!);
-      return { references, base };
+      const references = JSON.parse(value) as readonly unknown[];
+      return { references, base: references[0] };
     } catch {
       throw new Error(`Failed to parse base value: ${value}`);
     }
@@ -193,9 +192,8 @@ function internal_parseValue(value: string, opts?: Options) {
               try {
                 const values = references[id];
                 if (values) {
-                  const data = JSON.parse(values); // This is stored as an Array<string>
-                  if (Array.isArray(data)) {
-                    for (const item of data) {
+                  if (Array.isArray(values)) {
+                    for (const item of values) {
                       set.add(deserizalizeValue(item));
                     }
                   }
@@ -214,9 +212,8 @@ function internal_parseValue(value: string, opts?: Options) {
               try {
                 const values = references[id];
                 if (values) {
-                  const data = JSON.parse(values); // This is stored as an Array<[string, string]>
-                  if (Array.isArray(data)) {
-                    for (const [key, value] of data) {
+                  if (Array.isArray(values)) {
+                    for (const [key, value] of values) {
                       const decodedKey = deserizalizeValue(key);
                       const decodedValue = deserizalizeValue(value);
                       map.set(decodedKey, decodedValue);
@@ -234,7 +231,7 @@ function internal_parseValue(value: string, opts?: Options) {
               const id = parseTagId(input.slice(2));
               const rawValue = references[id];
 
-              if (!rawValue) {
+              if (rawValue === undefined) {
                 if (deferPromises) {
                   const deferred = deferredPromise();
                   pendingPromises.set(id, deferred);
@@ -245,7 +242,7 @@ function internal_parseValue(value: string, opts?: Options) {
               }
 
               try {
-                const resolvedValue = deserizalizeValue(JSON.parse(rawValue));
+                const resolvedValue = deserizalizeValue(rawValue);
                 return trackPromise(id, Promise.resolve(resolvedValue));
               } catch {
                 throw new Error("Unable to resolve promise value");

@@ -46,7 +46,7 @@ export async function encodeToFormData(
   await Promise.all(pendingPromises);
 
   for (let i = 0; i < output.length; i++) {
-    formData.set(String(i), output[i]);
+    formData.set(String(i), JSON.stringify(output[i]));
   }
 
   return formData;
@@ -245,7 +245,7 @@ function deserializeBuffer(tag: Tag, input: string, context: Context) {
     if (!data) {
       throw new Error(`Unable to get '${input}' buffer data`);
     }
-    return String(data);
+    return JSON.parse(String(data));
   };
 
   switch (tag) {

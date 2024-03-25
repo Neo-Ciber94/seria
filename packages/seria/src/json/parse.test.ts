@@ -121,6 +121,7 @@ describe("Parse object", async () => {
     };
 
     const json = await stringifyAsync(promises);
+
     const decoded: any = parse(json);
 
     await expect(decoded.num).resolves.toStrictEqual(42);

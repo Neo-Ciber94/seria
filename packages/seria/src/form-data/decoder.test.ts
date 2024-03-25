@@ -130,6 +130,27 @@ describe("Decode object", async () => {
     await expect(decoded.array).resolves.toStrictEqual([1, 2, 3]);
   });
 
+  test("Decode promises with falsy", async () => {
+    const promises = {
+      zero: Promise.resolve(0),
+      empty: Promise.resolve(""),
+      bigzero: Promise.resolve(0n),
+      false: Promise.resolve(false),
+      null: Promise.resolve(null),
+      undefined: Promise.resolve(undefined),
+    };
+
+    const encoded = await encodeToFormData(promises);
+    const decoded: any = decodeFormData(encoded);
+
+    await expect(decoded.zero).resolves.toStrictEqual(0);
+    await expect(decoded.empty).resolves.toStrictEqual("");
+    await expect(decoded.bigzero).resolves.toStrictEqual(0n);
+    await expect(decoded.false).resolves.toStrictEqual(false);
+    await expect(decoded.null).resolves.toStrictEqual(null);
+    await expect(decoded.undefined).resolves.toStrictEqual(undefined);
+  });
+
   test("Decode obj with form", async () => {
     const obj = {
       formData: (() => {
