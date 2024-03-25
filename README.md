@@ -58,6 +58,7 @@ If you serialize a value that contains any `Promise` you need to serialize using
 Seria supports various data types, including:
 
 - string/number/boolean/null
+- undefined
 - Date
 - BigInt
 - Promise

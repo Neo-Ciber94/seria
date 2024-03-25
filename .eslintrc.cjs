@@ -4,7 +4,12 @@ module.exports = {
     es2021: true,
     node: true,
   },
-  extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
+  extends: [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:react/recommended",
+    "plugin:react/jsx-runtime",
+  ],
   overrides: [
     {
       env: {
@@ -21,8 +26,9 @@ module.exports = {
     ecmaVersion: "latest",
     sourceType: "module",
     tsconfigRootDir: __dirname,
-    project: ["tsconfig.json"],
+    project: ["./tsconfig.json", "./website/tsconfig.json"],
   },
+  plugins: ["@typescript-eslint", "react"],
   rules: {
     "@typescript-eslint/no-floating-promises": "error",
     "@typescript-eslint/consistent-type-imports": "error",
