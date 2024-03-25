@@ -37,13 +37,12 @@ jobs:
         with:
           version: 8
 
-      - name: Set git config
-        run: |
-          git config --global user.name github-actions[bot]
-          git config --global user.email 41898282+github-actions[bot]@users.noreply.github.com
+      - name: Build Docs
+        run: cd website && pnpm install && pnpm run build
 
-      - name: "Deploy Docs"
-        run: cd website && pnpm install && pnpm run deploy
-        env:
-          GIT_USER: github-actions[bot]
-          GIT_PASS: ${{ secrets.GITHUB_TOKEN }}
+      - name: Deploy Docs
+        uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./website/build
