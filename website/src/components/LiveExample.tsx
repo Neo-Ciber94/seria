@@ -205,7 +205,7 @@ const STRINGIFY_MODES = [
   { name: "seria.stringify", value: "seria.stringify" },
   { name: "seria.stringifyToStream", value: "seria.stringifyToStream" },
   { name: "JSON.stringify", value: "json.stringify" },
-] as const satisfies {
+] satisfies {
   name: string;
   value: StringifyMode;
 }[];
