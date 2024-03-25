@@ -55,7 +55,7 @@ const config: Config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            "https://github.com/Neo-Ciber94/seria/tree/docs-website/website/docs",
+            "https://github.com/Neo-Ciber94/seria/website/docs",
           remarkPlugins: [
             [require("@docusaurus/remark-plugin-npm2yarn"), { sync: true }],
           ],
@@ -65,7 +65,7 @@ const config: Config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            "https://github.com/Neo-Ciber94/seria/tree/docs-website/website/docs",
+            "https://github.com/Neo-Ciber94/seria/website/docs",
         },
         theme: {
           customCss: "./src/css/custom.css",
@@ -91,7 +91,7 @@ const config: Config = {
           label: "Docs",
         },
         {
-          href: "https://github.com/Neo-Ciber94",
+          href: "https://github.com/Neo-Ciber94/seria",
           label: "GitHub",
           position: "right",
         },
