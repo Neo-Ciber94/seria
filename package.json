@@ -4,10 +4,10 @@
     "private": true,
     "version": "0.0.0",
     "scripts": {
-        "test": "turbo run test",
         "build": "turbo run build --filter ./packages/**/*",
-        "lint": "turbo run lint",
-        "typecheck": "turbo run typecheck"
+        "typecheck": "turbo run typecheck --filter ./packages/**/*",
+        "test": "turbo run test",
+        "lint": "turbo run lint"
     },
     "devDependencies": {
         "turbo": "^1.13.0"

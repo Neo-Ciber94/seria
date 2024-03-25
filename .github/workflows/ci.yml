@@ -23,13 +23,13 @@ jobs:
             - recursive: true
 
       - name: Check Types
-        run: pnpm run -r typecheck 
+        run: pnpm run typecheck # FIXME: this fails with src/components/LiveExample.tsx(3,24): error TS2307: Cannot find module 'seria' or its corresponding type declarations.
 
       - name: Check formatting
-        run: pnpm run -r lint
+        run: pnpm run lint
 
       - name: Run Tests
-        run: pnpm run -r test
+        run: pnpm run test
 
   # Deploy docs
   deploy:
