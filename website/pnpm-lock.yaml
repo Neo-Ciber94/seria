@@ -48,8 +48,8 @@ dependencies:
     specifier: ^15.5.0
     version: 15.5.0(react@18.2.0)
   seria:
-    specifier: file:../dist
-    version: file:../dist
+    specifier: 0.1.3
+    version: 0.1.3
   tailwindcss:
     specifier: ^3.4.1
     version: 3.4.1
@@ -7954,6 +7954,10 @@ packages:
     transitivePeerDependencies:
       - supports-color
 
+  /seria@0.1.3:
+    resolution: {integrity: sha512-3BCuKtspE5AzotTPJpY5fSGxaOQhaoFVKE7kBfqwLEdMpwoUKSn65Fp3zTheY3neH4PYu3sDpqGiwaZE+vKV/Q==}
+    dev: false
+
   /serialize-javascript@6.0.2:
     resolution: {integrity: sha512-Saa1xPByTTq2gdeFZYLLo+RFE35NHZkAbqZeWNd3BpzppeVisAqpDjcp8dyf6uIvEqJRd46jemmyA4iFIeVk8g==}
     dependencies:
@@ -8969,8 +8973,3 @@ packages:
 
   /zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
-
-  file:../dist:
-    resolution: {directory: ../dist, type: directory}
-    name: dist
-    dev: false
