@@ -1,7 +1,7 @@
 import Link from "@docusaurus/Link";
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import Layout from "@theme/Layout";
-import LiveExample from "../components/LiveExample";
+import BrowserOnly from "@docusaurus/BrowserOnly";
 
 function Hero() {
   const { siteConfig } = useDocusaurusContext();
@@ -28,7 +28,13 @@ function Hero() {
       </div>
 
       <div className="text-white bg-black/30 py-8 px-2 rounded-lg mt-10 mb-2 mx-auto xl:max-w-7xl w-full">
-        <LiveExample />
+        <BrowserOnly fallback={<div>Loading...</div>}>
+          {() => {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const LiveExample = require("../components/LiveExample");
+            return <LiveExample />;
+          }}
+        </BrowserOnly>
       </div>
     </section>
   );
