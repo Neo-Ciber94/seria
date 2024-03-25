@@ -84,21 +84,28 @@ export function stringifyToStream(
   });
   return new ReadableStream<string>({
     async start(controller) {
-      controller.enqueue(JSON.stringify(output, null, space));
+      const json = JSON.stringify(output, null, space);
+      controller.enqueue(`${json}\n\n`);
 
       await forEachPromise(pendingPromises, {
         async onResolved({ data, id }) {
           const resolved = trackPromise(id, Promise.resolve(data));
 
           // `stringifyAsync` with an initial `id`
-          // We use the initial to set the promise on the correct array slot
-          const { output, pendingPromises } = internal_serialize(resolved, {
+          // We use the initial to set the promise on the correct slot
+          const serializedPromise = internal_serialize(resolved, {
             replacer,
             initialID: id,
           });
 
-          await Promise.all(pendingPromises);
-          controller.enqueue(JSON.stringify(output, null, space));
+          await Promise.all(serializedPromise.pendingPromises);
+          const promiseJson = JSON.stringify(
+            serializedPromise.output,
+            null,
+            space
+          );
+
+          controller.enqueue(`${promiseJson}\n\n`);
         },
       });
 
@@ -223,7 +230,7 @@ export function internal_serialize(
         }
       }
       case "function":
-        throw new Error("Functions cannot be serialized as action payload");
+        throw new Error("Functions cannot be serialized");
       default:
         throw new Error(
           `Unreachable. Reaching this code should be considered a bug`

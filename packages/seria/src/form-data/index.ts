@@ -94,37 +94,37 @@ export function decodeFormData(value: FormData, reviver?: Reviver): unknown {
         return input;
       case "string": {
         if (input[0] === "$") {
-          const tag = input.slice(1);
+          const maybeTag = input.slice(1);
 
           switch (true) {
-            case tag[0] === Tag.String: {
+            case maybeTag[0] === Tag.String: {
               return input.slice(2);
             }
-            case tag[0] === Tag.Symbol: {
+            case maybeTag[0] === Tag.Symbol: {
               return Symbol.for(input.slice(2));
             }
-            case tag[0] === Tag.Date: {
+            case maybeTag[0] === Tag.Date: {
               return new Date(input.slice(2));
             }
-            case tag[0] === Tag.BigInt: {
+            case maybeTag[0] === Tag.BigInt: {
               return BigInt(input.slice(2));
             }
-            case tag === Tag.Undefined: {
+            case maybeTag === Tag.Undefined: {
               return undefined;
             }
-            case tag === Tag.Infinity_: {
+            case maybeTag === Tag.Infinity_: {
               return Infinity;
             }
-            case tag === Tag.NegativeInfinity: {
+            case maybeTag === Tag.NegativeInfinity: {
               return -Infinity;
             }
-            case tag === Tag.NegativeZero: {
+            case maybeTag === Tag.NegativeZero: {
               return -0;
             }
-            case tag === Tag.NaN_: {
+            case maybeTag === Tag.NaN_: {
               return NaN;
             }
-            case tag[0] === Tag.Set: {
+            case maybeTag[0] === Tag.Set: {
               const id = input.slice(2);
               const set = new Set<any>();
 
@@ -145,7 +145,7 @@ export function decodeFormData(value: FormData, reviver?: Reviver): unknown {
 
               return set;
             }
-            case tag[0] === Tag.Map: {
+            case maybeTag[0] === Tag.Map: {
               const id = input.slice(2);
               const map = new Map<any, any>();
 
@@ -168,7 +168,7 @@ export function decodeFormData(value: FormData, reviver?: Reviver): unknown {
 
               return map;
             }
-            case tag[0] === Tag.Promise: {
+            case maybeTag[0] === Tag.Promise: {
               const id = input.slice(2);
               const rawValue = value.get(id);
 
@@ -185,7 +185,7 @@ export function decodeFormData(value: FormData, reviver?: Reviver): unknown {
                 throw new Error("Unable to resolve promise value");
               }
             }
-            case tag[0] === Tag.FormData: {
+            case maybeTag[0] === Tag.FormData: {
               const formData = new FormData();
               const id = input.slice(2);
 
@@ -199,8 +199,10 @@ export function decodeFormData(value: FormData, reviver?: Reviver): unknown {
 
               return formData;
             }
-            case isTypedArrayTag(tag[0]): {
-              return deserializeBuffer(tag[0], input, { references: value });
+            case isTypedArrayTag(maybeTag[0]): {
+              return deserializeBuffer(maybeTag[0], input, {
+                references: value,
+              });
             }
             default:
               throw new Error(`Unknown reference value: ${input}`);

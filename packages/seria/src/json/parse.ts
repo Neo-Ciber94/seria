@@ -80,18 +80,13 @@ export function internal_parseFromStream(
 
   return new ReadableStream<unknown>({
     async start(controller) {
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        const { done, value: json } = await reader.read();
-        if (done || json === undefined) {
-          break;
-        }
-
-        const { data, pendingPromises } = internal_parseValue(json, {
+      async function processChunk(jsonChunk: string) {
+        const { data, pendingPromises } = internal_parseValue(jsonChunk, {
           deferPromises: true,
           reviver,
         });
 
+        // Send the value
         controller.enqueue(data);
 
         // Handle promises
@@ -115,6 +110,23 @@ export function internal_parseFromStream(
               deferred.reject(err);
             }
           }
+        }
+      }
+
+      while (true) {
+        const { done, value: raw } = await reader.read();
+        if (done || raw === undefined) {
+          break;
+        }
+
+        const chunks = raw.split("\n\n").filter(Boolean);
+
+        // We process all chunks at once if possible
+        if (chunks.length > 1) {
+          const promises = chunks.map(processChunk);
+          await Promise.all(promises);
+        } else {
+          await processChunk(chunks[0]);
         }
       }
 
@@ -155,37 +167,37 @@ function internal_parseValue(value: string, opts?: Options) {
         return input;
       case "string": {
         if (input[0] === "$") {
-          const tag = input.slice(1);
+          const maybeTag = input.slice(1);
 
           switch (true) {
-            case tag[0] === Tag.String: {
+            case maybeTag[0] === Tag.String: {
               return input.slice(2);
             }
-            case tag[0] === Tag.Symbol: {
+            case maybeTag[0] === Tag.Symbol: {
               return Symbol.for(input.slice(2));
             }
-            case tag[0] === Tag.Date: {
+            case maybeTag[0] === Tag.Date: {
               return new Date(input.slice(2));
             }
-            case tag[0] === Tag.BigInt: {
+            case maybeTag[0] === Tag.BigInt: {
               return BigInt(input.slice(2));
             }
-            case tag === Tag.Undefined: {
+            case maybeTag === Tag.Undefined: {
               return undefined;
             }
-            case tag === Tag.Infinity_: {
+            case maybeTag === Tag.Infinity_: {
               return Infinity;
             }
-            case tag === Tag.NegativeInfinity: {
+            case maybeTag === Tag.NegativeInfinity: {
               return -Infinity;
             }
-            case tag === Tag.NegativeZero: {
+            case maybeTag === Tag.NegativeZero: {
               return -0;
             }
-            case tag === Tag.NaN_: {
+            case maybeTag === Tag.NaN_: {
               return NaN;
             }
-            case tag[0] === Tag.Set: {
+            case maybeTag[0] === Tag.Set: {
               const id = parseTagId(input.slice(2));
               const set = new Set<any>();
 
@@ -205,7 +217,7 @@ function internal_parseValue(value: string, opts?: Options) {
 
               return set;
             }
-            case tag[0] === Tag.Map: {
+            case maybeTag[0] === Tag.Map: {
               const id = parseTagId(input.slice(2));
               const map = new Map<any, any>();
 
@@ -227,7 +239,7 @@ function internal_parseValue(value: string, opts?: Options) {
 
               return map;
             }
-            case tag[0] === Tag.Promise: {
+            case maybeTag[0] === Tag.Promise: {
               const id = parseTagId(input.slice(2));
               const rawValue = references[id];
 
@@ -235,7 +247,7 @@ function internal_parseValue(value: string, opts?: Options) {
                 if (deferPromises) {
                   const deferred = deferredPromise();
                   pendingPromises.set(id, deferred);
-                  return trackPromise(id, deferred.promise);
+                  return deferred.promise;
                 }
 
                 throw new Error("Failed to find promise resolved value");
@@ -248,8 +260,8 @@ function internal_parseValue(value: string, opts?: Options) {
                 throw new Error("Unable to resolve promise value");
               }
             }
-            case isTypedArrayTag(tag[0]): {
-              return deserializeBuffer(tag[0], input, {
+            case isTypedArrayTag(maybeTag[0]): {
+              return deserializeBuffer(maybeTag[0], input, {
                 references,
               });
             }

@@ -199,6 +199,13 @@ describe("stringify promise", () => {
     expect(JSON.parse(data)[1]).toStrictEqual(42);
   });
 
+  test("stringify promise with set", async () => {
+    const p = Promise.resolve(new Set([1, 2, 3]));
+    const json = await stringifyAsync(p);
+
+    expect(json).toStrictEqual(`["$@1","$W2",[1,2,3]]`);
+  });
+
   test("stringify promise with promise", async () => {
     const promise = Promise.resolve(
       (async () => {
@@ -227,7 +234,7 @@ describe("stringify promise", () => {
 
     const firstChunk = (await reader.read()).value!;
     expect(firstChunk).toStrictEqual(
-      `[{"num":24,"text":"$$hello","promise":"$@1"}]`
+      `[{"num":24,"text":"$$hello","promise":"$@1"}]\n\n`
     );
 
     const p1 = JSON.parse(firstChunk)[0];
@@ -238,7 +245,7 @@ describe("stringify promise", () => {
     // Await for promises for complete
     await new Promise((resolve) => setTimeout(resolve, 50));
     const secondChunk = (await reader.read()).value!;
-    expect(secondChunk).toStrictEqual(`["$@1",200]`);
+    expect(secondChunk).toStrictEqual(`["$@1",200]\n\n`);
 
     const p2 = JSON.parse(secondChunk);
     expect(p2[1]).toStrictEqual(200);
@@ -260,26 +267,21 @@ describe("stringify promise", () => {
 
     const firstChunk = (await reader.read()).value!;
     expect(firstChunk).toStrictEqual(
-      `[{"num":"$@1","text":"$@2","promise":"$@3"}]`
+      `[{"num":"$@1","text":"$@2","promise":"$@3"}]\n\n`
     );
 
     const secondChunk = (await reader.read()).value!;
-    expect(secondChunk).toStrictEqual(`["$@1",49]`);
+    expect(secondChunk).toStrictEqual(`["$@1",49]\n\n`);
 
     const thirdChunk = (await reader.read()).value!;
-    expect(thirdChunk).toStrictEqual(`["$@2",null,"$$Ice Cream"]`);
+    expect(thirdChunk).toStrictEqual(`["$@2",null,"$$Ice Cream"]\n\n`);
 
     await new Promise((resolve) => setTimeout(resolve, 50));
     const forthChunk = (await reader.read()).value!;
-    expect(forthChunk).toStrictEqual(`["$@3",null,null,{"name":"$$Ayaka"}]`);
+    expect(forthChunk).toStrictEqual(
+      `["$@3",null,null,{"name":"$$Ayaka"}]\n\n`
+    );
 
     expect((await reader.read()).done).toBeTruthy();
-  });
-
-  test("stringify promise with set", async () => {
-    const p = Promise.resolve(new Set([1, 2, 3]));
-    const json = await stringifyAsync(p);
-
-    expect(json).toStrictEqual(`["$@1","$W2",[1,2,3]]`);
   });
 });

@@ -39,6 +39,7 @@ const config = {
     "@typescript-eslint/no-floating-promises": "error",
     "@typescript-eslint/consistent-type-imports": "error",
     "no-unused-vars": "off",
+    "no-constant-condition": ["error", { checkLoops: false }],
     "@typescript-eslint/no-unused-vars": [
       "warn",
       {

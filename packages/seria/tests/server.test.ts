@@ -11,8 +11,8 @@ import {
   stringifyToStream,
 } from "../src";
 import { stream } from "hono/streaming";
-import { EventSourceParserStream } from "eventsource-parser/stream";
-import { type ParsedEvent } from "eventsource-parser";
+// import { EventSourceParserStream } from "eventsource-parser/stream";
+// import { type ParsedEvent } from "eventsource-parser";
 
 type Server = ReturnType<typeof serve>;
 
@@ -69,14 +69,7 @@ beforeAll(() => {
         })(),
       };
 
-      const jsonStream = stringifyToStream(obj).pipeThrough(
-        new TransformStream<string, string>({
-          transform(json, controller) {
-            controller.enqueue(`data: ${json}\n\n`);
-          },
-        })
-      );
-
+      const jsonStream = stringifyToStream(obj);
       await stream.pipe(jsonStream);
       await stream.close();
     });
@@ -146,18 +139,9 @@ describe("Server and client JSON", () => {
 
     expect(reader).toBeTruthy();
 
-    const stream = reader
-      .pipeThrough(new TextDecoderStream())
-      .pipeThrough(new EventSourceParserStream())
-      .pipeThrough(
-        new TransformStream<ParsedEvent, string>({
-          transform(event, controller) {
-            controller.enqueue(event.data);
-          },
-        })
-      );
-
+    const stream = reader.pipeThrough(new TextDecoderStream());
     const obj: any = await parseFromStream(stream);
+
     await expect(obj.age).resolves.toStrictEqual(35);
     await expect(obj.alive).resolves.toStrictEqual(true);
     await expect(obj.name).resolves.toStrictEqual("Satoru Gojo");
