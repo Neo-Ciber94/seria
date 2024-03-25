@@ -336,7 +336,6 @@ function serializePromise(input: Promise<any>, context: Context) {
   // We create a new promise that resolve to the serialized value
   const resolvingPromise = input.then((value) => {
     const ret = context.serializeToString(value);
-    context.output[id] = ret;
     context.writtenValues.set(id, ret);
     context.checkWrittenValues(); // Update the values with the new one
     return value;
