@@ -33,9 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
-      - uses: redkubes/docusaurus-deploy-action@v1
-        with:
-          source-folder: website
-          git-user: Neo-Ciber94
-          git-password: ${{ secrets.GITHUB_TOKEN }}
-          deployment-branch: gh-pages
+      - name: "Deploy Docs"
+        run: cd website && pnpm run deploy
+        env:
+          GIT_USER: Neo-Ciber94
