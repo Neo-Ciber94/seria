@@ -32,24 +32,14 @@ beforeAll(() => {
   const app = new Hono();
 
   app.post("/upload", async (c) => {
-    const rawBody = await c.req.parseBody();
-    const formData = new UndiciFormData();
-
-    for (const [key, value] of Object.entries(rawBody)) {
-      if (Array.isArray(value)) {
-        value.forEach((f) => formData.append(key, f));
-      } else {
-        formData.append(key, value);
-      }
-    }
-
+    const formData = await c.req.formData();
     const value = decodeFormData(formData as FormData, null, {
       types: {
         FormData: UndiciFormData,
       },
     }) as BocchiCharacter;
 
-    // Update the mocked value
+    // Set the mocked value
     mockCharacter = value;
 
     for (const [_, file] of value.photos.entries()) {
@@ -122,6 +112,12 @@ describe("Server and client FormData", () => {
     await expect(mockCharacter?.futureGoalPromise).resolves.toStrictEqual(
       "Become a Rock Star!"
     );
+    expect(mockCharacter?.photos).toBeTruthy();
+
+    // Check if file exists
+    expect(
+      fs.statSync(path.join(__dirname, "temp", "bocchi.jpg")).isFile
+    ).toBeTruthy();
   });
 });
 
