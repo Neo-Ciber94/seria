@@ -7,6 +7,7 @@ import { useTheme } from "../hooks/useTheme";
 import { loadTheme } from "prism-code-editor/themes";
 import "prism-code-editor/prism/languages/javascript";
 import "prism-code-editor/layout.css";
+import "prism-code-editor/themes/github-dark.css";
 
 const EDITOR_STYLES = {
   dark: "",
@@ -21,12 +22,17 @@ void Promise.all([loadTheme("github-dark"), loadTheme("github-light")]).then(
 );
 
 const INITIAL_CODE = `{
-    name: "Satoru Gojo",
-    age: 28,
-    alive: true,
-    birthdate: new Date(1989, 11, 7),
-    zodiac_sign: Symbol.for("Sagittarius"),
-    ability: delay(1000).then(() => "Limitless")
+  name: "Satoru Gojo",
+  age: 28,
+  alive: true,
+  birthdate: new Date(1989, 11, 7),
+  zodiac_sign: Symbol.for("Sagittarius"),
+  ability: delay(1000).then(() => "Limitless"),
+  favorite_colors: new Set(["red", "blue", "purple"]),
+  affiliations: new Map([
+      ["school", "Tokyo Metropolitan Curse Technical College"],
+      ["organization", "Jujutsu Sorcerers"]
+  ])
 }`;
 
 type StringifyMode =
@@ -133,17 +139,19 @@ export default function LiveExample() {
           __html: theme === "dark" ? EDITOR_STYLES.dark : EDITOR_STYLES.light,
         }}
       ></style>
-      <h1 className="text-center mb-0">Try out seria serialization!</h1>
+      <h1 className="text-center mb-0 text-xl sm:text-3xl">
+        Try out seria serialization!
+      </h1>
       <div className="p-2 flex flex-col xl:flex-row w-full h-full gap-2">
         <div className="w-full h-full">
-          <h2>Javascript</h2>
+          <h2 className="text-base sm:text-xl">Javascript</h2>
           <div className="w-full h-full xl:w-[600px] xl:min-h-[300px] border border-gray-400 shadow rounded-lg overflow-hidden">
             <div ref={editorContainerRef} />
           </div>
         </div>
 
         <div className="w-full h-full">
-          <h2>Result</h2>
+          <h2 className="text-base sm:text-xl">Result</h2>
           <div className="relative w-full xl:w-[600px] xl:min-h-[300px] h-full">
             <div className="absolute right-0 top-0">
               <StringifyModeSelect value={mode} onChange={setMode} />
@@ -161,22 +169,29 @@ function StringifyPreview({ result }: { result: StringifyOutput }) {
   switch (result.state) {
     case "loading":
       return (
-        <div className="px-4 py-10 bg-neutral-800 text-green-500 font-mono h-full w-full flex rounded-lg min-h-[inherit]">
+        <div className="px-4 py-10 bg-neutral-800 text-green-500 font-mono h-full w-full flex rounded-lg min-h-[inherit] text-xs sm:text-sm">
           Resolving...
         </div>
       );
     case "error":
       return (
-        <div className="px-4 py-10 bg-neutral-800 text-red-500 font-mono h-full w-full rounded-lg min-h-[inherit]">
+        <div className="px-4 py-10 bg-neutral-800 text-red-500 font-mono h-full w-full rounded-lg min-h-[inherit] text-xs sm:text-sm">
           {result.message}
         </div>
       );
     case "success":
       return (
-        <div className="p-4 bg-neutral-800 text-pink-400 rounded-lg w-full h-full min-h-[inherit]">
+        <div className="p-4 bg-white dark:bg-neutral-800 rounded-lg w-full h-full min-h-[inherit] text-xs sm:text-sm">
           {getArray(result.json).map((chunk, idx) => {
             return (
-              <pre className="bg-transparent my-0 py-0" key={idx}>
+              <pre
+                className={`bg-transparent my-0 py-0 ${
+                  idx % 2 === 0
+                    ? "text-pink-600 dark:text-pink-400"
+                    : "text-indigo-600 dark:text-indigo-400"
+                }`}
+                key={idx}
+              >
                 <code className="text-wrap">{chunk}</code>
               </pre>
             );
