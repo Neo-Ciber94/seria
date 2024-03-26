@@ -28,7 +28,11 @@ function Hero() {
       </div>
 
       <div className="text-white bg-black/30 py-8 px-2 rounded-lg mt-10 mb-2 mx-auto xl:max-w-7xl w-full">
-        <BrowserOnly fallback={<div>Loading...</div>}>
+        <BrowserOnly
+          fallback={
+            <div className="text-2xl opacity-50 animate-pulse">Loading...</div>
+          }
+        >
           {() => {
             // eslint-disable-next-line @typescript-eslint/no-var-requires
             const LiveExample = require("../components/LiveExample").default;

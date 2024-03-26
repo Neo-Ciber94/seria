@@ -7,19 +7,24 @@ export function useTheme(): Theme {
   const [theme, setTheme] = useState<Theme>("dark");
 
   useLayoutEffect(() => {
+    const checkTheme = () => {
+      const dataTheme = document.documentElement.getAttribute("data-theme");
+      const isDark = dataTheme === "dark";
+      setTheme(isDark ? "dark" : "light");
+    };
+
     const observer = new MutationObserver((mutations) => {
       mutations.forEach(function (mutation) {
         if (
           mutation.type === "attributes" &&
           mutation.attributeName === "data-theme"
         ) {
-          const dataTheme = document.documentElement.getAttribute("data-theme");
-          const isDark = dataTheme === "dark";
-          setTheme(isDark ? "dark" : "light");
+          checkTheme();
         }
       });
     });
 
+    checkTheme();
     observer.observe(document.documentElement, {
       attributes: true,
     });

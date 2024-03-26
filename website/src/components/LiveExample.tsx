@@ -7,7 +7,9 @@ import { useTheme } from "../hooks/useTheme";
 import { loadTheme } from "prism-code-editor/themes";
 import "prism-code-editor/prism/languages/javascript";
 import "prism-code-editor/layout.css";
-import "prism-code-editor/themes/github-dark.css";
+import { SiJavascript } from "react-icons/si";
+import { VscJson } from "react-icons/vsc";
+import { CgSpinner } from "react-icons/cg";
 
 const EDITOR_STYLES = {
   dark: "",
@@ -59,25 +61,23 @@ export default function LiveExample() {
   const editorRef = useRef<PrismEditor>();
   const [mode, setMode] = useState<StringifyMode>("seria.stringify");
   const [stringifyOutput, setStringifyOutput] = useState<StringifyOutput>();
+  const [isStreaming, setIsStreaming] = useState(false);
   const theme = useTheme();
+  const isProcessing = isStreaming || stringifyOutput?.state === "loading";
 
   useEffect(() => {
     if (!editorContainerRef.current) {
       return;
     }
 
-    editorRef.current = createEditor(
-      editorContainerRef.current,
-      {
-        language: "javascript",
-        value: code,
-        lineNumbers: false,
-        onUpdate(value) {
-          setCode(value);
-        },
+    editorRef.current = createEditor(editorContainerRef.current, {
+      language: "javascript",
+      value: code,
+      lineNumbers: false,
+      onUpdate(value) {
+        setCode(value);
       },
-      () => console.log("editor ready")
-    );
+    });
 
     return () => {
       if (editorRef.current) {
@@ -107,16 +107,21 @@ export default function LiveExample() {
             setStringifyOutput({ state: "loading" });
             const chunks: string[] = [];
             const reader = seria.stringifyToStream(obj, null, 2).getReader();
+            setIsStreaming(true);
 
-            for (;;) {
-              const { done, value } = await reader.read();
+            try {
+              for (;;) {
+                const { done, value } = await reader.read();
 
-              if (done || value === undefined) {
-                break;
+                if (done || value === undefined) {
+                  break;
+                }
+
+                chunks.push(value);
+                setStringifyOutput({ state: "success", json: chunks });
               }
-
-              chunks.push(value);
-              setStringifyOutput({ state: "success", json: chunks });
+            } finally {
+              setIsStreaming(false);
             }
 
             break;
@@ -139,25 +144,44 @@ export default function LiveExample() {
           __html: theme === "dark" ? EDITOR_STYLES.dark : EDITOR_STYLES.light,
         }}
       ></style>
-      <h1 className="text-center mb-0 text-xl sm:text-3xl">
-        Try out seria serialization!
+      <h1 className="text-center text-xl sm:text-3xl">
+        Try out{" "}
+        <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-300 via-pink-300 to-pink-400">
+          seria
+        </span>{" "}
+        serialization!
       </h1>
-      <div className="p-2 flex flex-col xl:flex-row w-full h-full gap-2">
-        <div className="w-full h-full">
-          <h2 className="text-base sm:text-xl">Javascript</h2>
-          <div className="w-full h-full xl:w-[600px] xl:min-h-[300px] border border-gray-400 shadow rounded-lg overflow-hidden">
+      <div className="p-2 flex flex-col xl:flex-row w-full justify-around h-full gap-2">
+        <div className="h-auto flex flex-col">
+          <div className="w-full h-full min-h-32 xl:w-[600px] dark:bg-[#0d1117] text-black dark:text-white bg-white xl:min-h-[300px] border border-gray-400 shadow rounded-lg overflow-hidden">
             <div ref={editorContainerRef} />
+          </div>
+          <div className="flex flex-row items-center gap-2 bg-black text-white py-2 px-4 font-semibold text-lg rounded-md mt-2">
+            <span className="leading-none text-yellow-400 text-2xl">
+              <SiJavascript />
+            </span>
+            Javascript
           </div>
         </div>
 
-        <div className="w-full h-full">
-          <h2 className="text-base sm:text-xl">Result</h2>
+        <div className="h-auto flex flex-col">
           <div className="relative w-full xl:w-[600px] xl:min-h-[300px] h-full">
             <div className="absolute right-0 top-0">
               <StringifyModeSelect value={mode} onChange={setMode} />
             </div>
 
             {stringifyOutput && <StringifyPreview result={stringifyOutput} />}
+          </div>
+          <div className="flex items-center flex-row gap-1 bg-black text-white py-2 px-4 font-semibold text-lg rounded-md mt-2">
+            {isProcessing ? (
+              <Spinner />
+            ) : (
+              <span className="leading-none text-3xl text-pink-500">
+                <VscJson />
+              </span>
+            )}
+
+            {isProcessing ? "Processing..." : "Output"}
           </div>
         </div>
       </div>
@@ -169,13 +193,13 @@ function StringifyPreview({ result }: { result: StringifyOutput }) {
   switch (result.state) {
     case "loading":
       return (
-        <div className="px-4 py-10 bg-neutral-800 text-green-500 font-mono h-full w-full flex rounded-lg min-h-[inherit] text-xs sm:text-sm">
+        <div className="px-4 py-10 bg-white dark:bg-neutral-800 text-green-500 font-mono h-full w-full flex rounded-lg min-h-[inherit] text-xs sm:text-sm">
           Resolving...
         </div>
       );
     case "error":
       return (
-        <div className="px-4 py-10 bg-neutral-800 text-red-500 font-mono h-full w-full rounded-lg min-h-[inherit] text-xs sm:text-sm">
+        <div className="px-4 py-10 bg-white dark:bg-neutral-800 text-red-500 font-mono h-full w-full rounded-lg min-h-[inherit] text-xs sm:text-sm">
           {result.message}
         </div>
       );
@@ -351,4 +375,12 @@ function safeEval(code: string) {
 
 function getArray<T>(value: T | T[]) {
   return Array.isArray(value) ? value : [value];
+}
+
+function Spinner() {
+  return (
+    <span className="text-2xl animate-spin origin-center leading-[0] m-0 p-0">
+      <CgSpinner />
+    </span>
+  );
 }
