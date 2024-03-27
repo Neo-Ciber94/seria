@@ -13,6 +13,9 @@ export const enum Tag {
   NegativeZero = "-0",
   NaN_ = "NaN",
 
+  // Others
+  File = "k",
+
   // Buffers
   ArrayBuffer = "A",
   Int8Array = "C",

@@ -1,7 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { Tag, isTypedArrayTag } from "../tag";
-import { type Replacer, internal_serialize } from "../json/stringify";
+import {
+  type Replacer,
+  internal_serialize,
+  serializeTagValue,
+} from "../json/stringify";
 import { type Reviver } from "../json/parse";
 import { isPlainObject } from "../utils";
 import { base64ToBuffer } from "../utils";
@@ -10,18 +14,64 @@ import { base64ToBuffer } from "../utils";
 import type { FormData as UndiciFormData } from "undici";
 
 /**
- * Encode a value into a `FormData`.
+ * Encodes a value into a `FormData`, resolving all it's promises if any.
  * @param value The value to encode.
  * @param replacer Converts a value to string.
  * @returns The value encoded as `FormData`.
  */
-export async function encodeToFormData(
+export async function encode(
   value: unknown,
   replacer?: Replacer
 ): Promise<FormData> {
-  const _replacer = replacer;
   const formData = new FormData();
-  const { output, pendingPromises } = internal_serialize(value, {
+  const { output, pendingPromises } = encodeFormData_internal(value, {
+    formData,
+    replacer,
+  });
+
+  await Promise.all(pendingPromises);
+
+  for (let i = 0; i < output.length; i++) {
+    formData.set(String(i), JSON.stringify(output[i]));
+  }
+
+  return formData;
+}
+
+/**
+ * Encodes a value into a `FormData`.
+ * @param value The value to encode.
+ * @param replacer Converts a value to string.
+ * @returns The value encoded as `FormData`.
+ * @throws If the value is or have any promise.
+ */
+export function encodeSync(value: unknown, replacer?: Replacer): FormData {
+  const formData = new FormData();
+  const { output, pendingPromises } = encodeFormData_internal(value, {
+    formData,
+    replacer,
+  });
+
+  if (pendingPromises.length > 0) {
+    throw new Error("Serialiation result have pending promises");
+  }
+
+  for (let i = 0; i < output.length; i++) {
+    formData.set(String(i), JSON.stringify(output[i]));
+  }
+
+  return formData;
+}
+
+function encodeFormData_internal(
+  value: unknown,
+  opts: {
+    formData: FormData;
+    replacer?: Replacer;
+  }
+) {
+  const { formData, replacer: _replacer } = opts;
+  return internal_serialize(value, {
     replacer: (input, ctx) => {
       if (_replacer) {
         const ret = _replacer(input, ctx);
@@ -38,30 +88,27 @@ export async function encodeToFormData(
           formData.set(fieldName, entry);
         }
 
-        // serializeTagValue
-        return `$${Tag.FormData}${id}`;
+        return serializeTagValue(Tag.FormData, id);
+      }
+
+      if (input instanceof File) {
+        const id = ctx.nextId();
+        formData.set(`${id}_file`, input);
+        return serializeTagValue(Tag.File, id);
       }
 
       return undefined;
     },
   });
-
-  await Promise.all(pendingPromises);
-
-  for (let i = 0; i < output.length; i++) {
-    formData.set(String(i), JSON.stringify(output[i]));
-  }
-
-  return formData;
 }
 
 // Inspired on: https://github.com/facebook/react/blob/1293047d6063f3508af15e68cca916660ded791e/packages/react-server/src/ReactFlightReplyServer.js#L379-L380
 
-type DecodeFormDataContext = {
+type DecodeContext = {
   references: FormData;
 };
 
-type DecodeFormDataOptions = {
+type DecodeOptions = {
   /**
    * Custom type constructors to use.
    */
@@ -79,10 +126,10 @@ type DecodeFormDataOptions = {
  * @param reviver Converts a value.
  * @returns The decoded value.
  */
-export function decodeFormData(
+export function decode(
   value: FormData,
   reviver?: Reviver | null,
-  opts?: DecodeFormDataOptions
+  opts?: DecodeOptions
 ): unknown {
   const { types } = opts || {};
   const { FormData: FormDataConstructor = globalThis.FormData } = types || {};
@@ -226,6 +273,16 @@ export function decodeFormData(
                 references: value,
               });
             }
+            case maybeTag[0] === Tag.File: {
+              const id = input.slice(2);
+              const file = value.get(`${id}_file`);
+
+              if (!(file instanceof File)) {
+                throw new Error(`File '${id}_file' was not found`);
+              }
+
+              return file;
+            }
             default:
               throw new Error(`Unknown reference value: ${input}`);
           }
@@ -262,11 +319,7 @@ export function decodeFormData(
   return deserizalizeValue(baseValue);
 }
 
-function deserializeBuffer(
-  tag: Tag,
-  input: string,
-  context: DecodeFormDataContext
-) {
+function deserializeBuffer(tag: Tag, input: string, context: DecodeContext) {
   const getBufferData = () => {
     const id = input.slice(2);
     const data = context.references.get(id);

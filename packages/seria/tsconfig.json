@@ -18,7 +18,8 @@
             "DOM",
             "DOM.Iterable"
         ],
-        "outDir": "dist"
+        "outDir": "dist",
+        "stripInternal": true
     },
     "include": [
         "src",

@@ -382,6 +382,9 @@ function serializeTypedArray(
   return serializeTagValue(tag, id);
 }
 
-function serializeTagValue(tag: Tag, value?: number | string) {
+/**
+ * @internal
+ */
+export function serializeTagValue(tag: Tag, value?: number | string) {
   return value ? `$${tag}${value}` : `$${tag}`;
 }
