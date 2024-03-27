@@ -8,7 +8,7 @@ import {
 import { bufferToBase64, isPlainObject } from "../utils";
 import { Tag } from "../tag";
 
-type Context = {
+type SerializeContext = {
   output: unknown[];
   writtenValues: Map<number, unknown>;
   pendingPromisesMap: Map<number, TrackingPromise<any>>;
@@ -18,7 +18,10 @@ type Context = {
   checkWrittenValues: () => void;
 };
 
-export type Replacer = (value: any, context: Context) => string | undefined;
+export type Replacer = (
+  value: any,
+  context: SerializeContext
+) => string | undefined;
 
 /**
  * Converts a value to a json string.
@@ -26,8 +29,7 @@ export type Replacer = (value: any, context: Context) => string | undefined;
  * @param replacer A function that encode a custom value.
  * @param space Adds indentation, white space to the json values line-breaks.
  * @returns The json string.
- * @throws If the promise contains any promise. Use `stringifyAsync` or `stringifyToStream`
- * to convert value with promises.
+ * @throws If the promise contains any promise. Use `stringifyAsync` or `stringifyToStream` to convert value with promises.
  */
 export function stringify(
   value: unknown,
@@ -143,7 +145,7 @@ export function internal_serialize(
     }
   };
 
-  const context: Context = {
+  const context: SerializeContext = {
     output,
     writtenValues,
     pendingPromisesMap,
@@ -278,7 +280,7 @@ function serializeDate(input: Date) {
   return serializeTagValue(Tag.Date, input.toJSON());
 }
 
-function serializeArray(input: Array<any>, context: Context) {
+function serializeArray(input: Array<any>, context: SerializeContext) {
   const items: unknown[] = [];
 
   for (const val of input) {
@@ -288,7 +290,7 @@ function serializeArray(input: Array<any>, context: Context) {
   return items;
 }
 
-function serializeSet(input: Set<any>, context: Context) {
+function serializeSet(input: Set<any>, context: SerializeContext) {
   const { writtenValues: referencesMap } = context;
   const items: unknown[] = [];
 
@@ -301,7 +303,7 @@ function serializeSet(input: Set<any>, context: Context) {
   return serializeTagValue(Tag.Set, id);
 }
 
-function serializeMap(input: Map<any, any>, context: Context) {
+function serializeMap(input: Map<any, any>, context: SerializeContext) {
   const { writtenValues: referencesMap } = context;
   const items: [unknown, unknown][] = [];
 
@@ -318,7 +320,7 @@ function serializeMap(input: Map<any, any>, context: Context) {
 
 function serializePlainObject(
   input: Record<string, unknown>,
-  context: Context
+  context: SerializeContext
 ) {
   const obj: Record<string, unknown> = {};
 
@@ -329,7 +331,7 @@ function serializePlainObject(
   return obj;
 }
 
-function serializePromise(input: Promise<any>, context: Context) {
+function serializePromise(input: Promise<any>, context: SerializeContext) {
   const id = context.nextId();
 
   // We create a new promise that resolve to the serialized value
@@ -347,7 +349,7 @@ function serializePromise(input: Promise<any>, context: Context) {
 
 function serializeResolvedPromise(
   input: TrackingPromise<any>,
-  context: Context
+  context: SerializeContext
 ) {
   const id = input.id;
   const status = input.status;
@@ -367,14 +369,14 @@ function serializeResolvedPromise(
   }
 }
 
-function serializeArrayBuffer(input: ArrayBuffer, context: Context) {
+function serializeArrayBuffer(input: ArrayBuffer, context: SerializeContext) {
   return serializeTypedArray(Tag.ArrayBuffer, new Uint8Array(input), context);
 }
 
 function serializeTypedArray(
   tag: Tag,
   input: ArrayBufferView,
-  context: Context
+  context: SerializeContext
 ) {
   const id = context.nextId();
   const buffer = bufferToBase64(input.buffer);

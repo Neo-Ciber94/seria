@@ -24,7 +24,7 @@ export async function encode(
   replacer?: Replacer
 ): Promise<FormData> {
   const formData = new FormData();
-  const { output, pendingPromises } = encodeFormData_internal(value, {
+  const { output, pendingPromises } = internal_encodeFormData(value, {
     formData,
     replacer,
   });
@@ -47,7 +47,7 @@ export async function encode(
  */
 export function encodeSync(value: unknown, replacer?: Replacer): FormData {
   const formData = new FormData();
-  const { output, pendingPromises } = encodeFormData_internal(value, {
+  const { output, pendingPromises } = internal_encodeFormData(value, {
     formData,
     replacer,
   });
@@ -63,7 +63,7 @@ export function encodeSync(value: unknown, replacer?: Replacer): FormData {
   return formData;
 }
 
-function encodeFormData_internal(
+function internal_encodeFormData(
   value: unknown,
   opts: {
     formData: FormData;
