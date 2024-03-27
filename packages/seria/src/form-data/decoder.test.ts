@@ -151,6 +151,50 @@ describe("Decode object", async () => {
     await expect(decoded.undefined).resolves.toStrictEqual(undefined);
   });
 
+  test("Decode promises with complex types", async () => {
+    const obj = {
+      map: delay(40).then(
+        () =>
+          new Map([
+            ["fruit", "mango"],
+            ["color", "yellow"],
+          ])
+      ),
+      set: Promise.resolve(new Set(["fire", "water", "rock"])),
+      nested: Promise.resolve({
+        num: Promise.resolve(999n),
+        date: delay(1).then(() => new Date(0)),
+        obj_with_symbol: Promise.resolve({
+          symbol: delay(2).then(() => Symbol.for("this_is_a_promise")),
+        }),
+      }),
+    };
+
+    const formData = await encode(obj);
+    const parsed = decode(formData) as typeof obj;
+
+    await expect(parsed.map).resolves.toEqual(
+      new Map([
+        ["fruit", "mango"],
+        ["color", "yellow"],
+      ])
+    );
+
+    await expect(parsed.set).resolves.toEqual(
+      new Set(["fire", "water", "rock"])
+    );
+
+    const nested = await parsed.nested;
+
+    await expect(nested.num).resolves.toStrictEqual(999n);
+    await expect(nested.date).resolves.toStrictEqual(new Date(0));
+
+    const obj_with_symbol = await nested.obj_with_symbol;
+    await expect(obj_with_symbol.symbol).resolves.toStrictEqual(
+      Symbol.for("this_is_a_promise")
+    );
+  });
+
   test("Decode obj with form", async () => {
     const obj = {
       formData: (() => {
@@ -408,3 +452,6 @@ describe("Decode with reviver and replacer", () => {
     });
   });
 });
+
+const delay = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
