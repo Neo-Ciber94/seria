@@ -1,84 +1,84 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, test } from "vitest";
-import { encodeToFormData } from ".";
-import { decodeFormData } from ".";
+import { encode } from ".";
+import { decode } from ".";
 
 describe("Decode value", () => {
   test("Decode string", async () => {
-    const encoded = await encodeToFormData("hello");
-    const decoded = decodeFormData(encoded);
+    const encoded = await encode("hello");
+    const decoded = decode(encoded);
     expect(decoded).toStrictEqual("hello");
   });
 
   test("Decode number", async () => {
-    const encoded = await encodeToFormData(42);
-    const decoded = decodeFormData(encoded);
+    const encoded = await encode(42);
+    const decoded = decode(encoded);
     expect(decoded).toStrictEqual(42);
   });
 
   test("Decode NaN", async () => {
-    const encoded = await encodeToFormData(NaN);
-    const decoded = decodeFormData(encoded);
+    const encoded = await encode(NaN);
+    const decoded = decode(encoded);
     expect(decoded).toBeNaN();
   });
 
   test("Decode -Infinity", async () => {
-    const encoded = await encodeToFormData(-Infinity);
-    const decoded = decodeFormData(encoded);
+    const encoded = await encode(-Infinity);
+    const decoded = decode(encoded);
     expect(decoded).toBe(-Infinity);
   });
 
   test("Decode Infinity", async () => {
-    const encoded = await encodeToFormData(Infinity);
-    const decoded = decodeFormData(encoded);
+    const encoded = await encode(Infinity);
+    const decoded = decode(encoded);
     expect(decoded).toBe(Infinity);
   });
 
   test("Decode -0", async () => {
-    const encoded = await encodeToFormData(-0);
-    const decoded = decodeFormData(encoded);
+    const encoded = await encode(-0);
+    const decoded = decode(encoded);
     expect(decoded).toBe(-0);
   });
 
   test("Decode boolean", async () => {
-    const encoded = await encodeToFormData(true);
-    const decoded = decodeFormData(encoded);
+    const encoded = await encode(true);
+    const decoded = decode(encoded);
     expect(decoded).toStrictEqual(true);
   });
 
   test("Decode null", async () => {
-    const encoded = await encodeToFormData(null);
-    const decoded = decodeFormData(encoded);
+    const encoded = await encode(null);
+    const decoded = decode(encoded);
     expect(decoded).toStrictEqual(null);
   });
 
   test("Decode undefined", async () => {
-    const encoded = await encodeToFormData(undefined);
-    const decoded = decodeFormData(encoded);
+    const encoded = await encode(undefined);
+    const decoded = decode(encoded);
     expect(decoded).toStrictEqual(undefined);
   });
 
   test("Decode Set", async () => {
-    const encoded = await encodeToFormData(new Set([1, "set", true]));
-    const decoded = decodeFormData(encoded);
+    const encoded = await encode(new Set([1, "set", true]));
+    const decoded = decode(encoded);
     expect(decoded).toEqual(new Set([1, "set", true]));
   });
 
   test("Decode Map", async () => {
-    const encoded = await encodeToFormData(new Map([["key", "value"]]));
-    const decoded = decodeFormData(encoded);
+    const encoded = await encode(new Map([["key", "value"]]));
+    const decoded = decode(encoded);
     expect(decoded).toEqual(new Map([["key", "value"]]));
   });
 
   test("Decode object", async () => {
-    const encoded = await encodeToFormData({ x: 1, y: "world", z: false });
-    const decoded = decodeFormData(encoded);
+    const encoded = await encode({ x: 1, y: "world", z: false });
+    const decoded = decode(encoded);
     expect(decoded).toStrictEqual({ x: 1, y: "world", z: false });
   });
 
   test("Decode Promise", async () => {
-    const encoded = await encodeToFormData(Promise.resolve("adios amigos"));
-    const decoded = decodeFormData(encoded);
+    const encoded = await encode(Promise.resolve("adios amigos"));
+    const decoded = decode(encoded);
     await expect(decoded).resolves.toStrictEqual("adios amigos");
   });
 });
@@ -97,8 +97,8 @@ describe("Decode object", async () => {
       promise: Promise.resolve("adios amigos"),
     };
 
-    const encoded = await encodeToFormData(obj);
-    const decoded: any = decodeFormData(encoded);
+    const encoded = await encode(obj);
+    const decoded: any = decode(encoded);
 
     expect(decoded.str).toStrictEqual("hello");
     expect(decoded.num).toStrictEqual(42);
@@ -120,8 +120,8 @@ describe("Decode object", async () => {
       array: Promise.resolve([1, 2, 3]),
     };
 
-    const encoded = await encodeToFormData(promises);
-    const decoded: any = decodeFormData(encoded);
+    const encoded = await encode(promises);
+    const decoded: any = decode(encoded);
 
     await expect(decoded.num).resolves.toStrictEqual(42);
     await expect(decoded.bool).resolves.toStrictEqual(true);
@@ -140,8 +140,8 @@ describe("Decode object", async () => {
       undefined: Promise.resolve(undefined),
     };
 
-    const encoded = await encodeToFormData(promises);
-    const decoded: any = decodeFormData(encoded);
+    const encoded = await encode(promises);
+    const decoded: any = decode(encoded);
 
     await expect(decoded.zero).resolves.toStrictEqual(0);
     await expect(decoded.empty).resolves.toStrictEqual("");
@@ -161,8 +161,8 @@ describe("Decode object", async () => {
       })(),
     };
 
-    const encoded = await encodeToFormData(obj);
-    const decoded: any = decodeFormData(encoded);
+    const encoded = await encode(obj);
+    const decoded: any = decode(encoded);
 
     const formData: FormData = decoded.formData;
     expect(formData).instanceOf(FormData);
@@ -181,8 +181,8 @@ describe("Decode object", async () => {
       })(),
     };
 
-    const encoded = await encodeToFormData(obj);
-    const decoded: any = decodeFormData(encoded);
+    const encoded = await encode(obj);
+    const decoded: any = decode(encoded);
 
     const formData: FormData = decoded.formData;
     expect(formData).instanceOf(FormData);
@@ -212,8 +212,8 @@ describe("Decode buffer", () => {
     const buffer = new ArrayBuffer(8);
     fillBuffer(new Uint8Array(buffer), (x) => x % 256);
 
-    const encoded = await encodeToFormData(buffer);
-    const decoded = decodeFormData(encoded) as ArrayBuffer;
+    const encoded = await encode(buffer);
+    const decoded = decode(encoded) as ArrayBuffer;
 
     const src = new DataView(buffer);
     const dst = new DataView(decoded);
@@ -226,8 +226,8 @@ describe("Decode buffer", () => {
     const buffer = new Int8Array(new ArrayBuffer(8));
     fillBuffer(buffer, (x) => x % 256);
 
-    const encoded = await encodeToFormData(buffer);
-    const decoded = decodeFormData(encoded) as Int8Array;
+    const encoded = await encode(buffer);
+    const decoded = decode(encoded) as Int8Array;
 
     for (let i = 0; i < decoded.length; i++) {
       expect(buffer[i]).toStrictEqual(decoded[i]);
@@ -238,8 +238,8 @@ describe("Decode buffer", () => {
     const buffer = new Uint8Array(new ArrayBuffer(8));
     fillBuffer(buffer, (x) => x % 256);
 
-    const encoded = await encodeToFormData(buffer);
-    const decoded = decodeFormData(encoded) as Uint8Array;
+    const encoded = await encode(buffer);
+    const decoded = decode(encoded) as Uint8Array;
 
     for (let i = 0; i < decoded.length; i++) {
       expect(buffer[i]).toStrictEqual(decoded[i]);
@@ -250,8 +250,8 @@ describe("Decode buffer", () => {
     const buffer = new Uint8ClampedArray(new ArrayBuffer(8));
     fillBuffer(buffer, (x) => x);
 
-    const encoded = await encodeToFormData(buffer);
-    const decoded = decodeFormData(encoded) as Uint8ClampedArray;
+    const encoded = await encode(buffer);
+    const decoded = decode(encoded) as Uint8ClampedArray;
 
     for (let i = 0; i < decoded.length; i++) {
       expect(buffer[i]).toStrictEqual(decoded[i]);
@@ -262,8 +262,8 @@ describe("Decode buffer", () => {
     const buffer = new Int16Array(new ArrayBuffer(16));
     fillBuffer(buffer, (x) => x);
 
-    const encoded = await encodeToFormData(buffer);
-    const decoded = decodeFormData(encoded) as Int16Array;
+    const encoded = await encode(buffer);
+    const decoded = decode(encoded) as Int16Array;
 
     for (let i = 0; i < decoded.length; i++) {
       expect(buffer[i]).toStrictEqual(decoded[i]);
@@ -274,8 +274,8 @@ describe("Decode buffer", () => {
     const buffer = new Uint16Array(new ArrayBuffer(16));
     fillBuffer(buffer, (x) => x);
 
-    const encoded = await encodeToFormData(buffer);
-    const decoded = decodeFormData(encoded) as Uint16Array;
+    const encoded = await encode(buffer);
+    const decoded = decode(encoded) as Uint16Array;
 
     for (let i = 0; i < decoded.length; i++) {
       expect(buffer[i]).toStrictEqual(decoded[i]);
@@ -286,8 +286,8 @@ describe("Decode buffer", () => {
     const buffer = new Int32Array(new ArrayBuffer(32));
     fillBuffer(buffer, (x) => x);
 
-    const encoded = await encodeToFormData(buffer);
-    const decoded = decodeFormData(encoded) as Int32Array;
+    const encoded = await encode(buffer);
+    const decoded = decode(encoded) as Int32Array;
 
     for (let i = 0; i < decoded.length; i++) {
       expect(buffer[i]).toStrictEqual(decoded[i]);
@@ -298,8 +298,8 @@ describe("Decode buffer", () => {
     const buffer = new Uint32Array(new ArrayBuffer(32));
     fillBuffer(buffer, (x) => x);
 
-    const encoded = await encodeToFormData(buffer);
-    const decoded = decodeFormData(encoded) as Uint32Array;
+    const encoded = await encode(buffer);
+    const decoded = decode(encoded) as Uint32Array;
 
     for (let i = 0; i < decoded.length; i++) {
       expect(buffer[i]).toStrictEqual(decoded[i]);
@@ -310,8 +310,8 @@ describe("Decode buffer", () => {
     const buffer = new Float32Array(new ArrayBuffer(32));
     fillBuffer(buffer, (x) => x * 0.1);
 
-    const encoded = await encodeToFormData(buffer);
-    const decoded = decodeFormData(encoded) as Float32Array;
+    const encoded = await encode(buffer);
+    const decoded = decode(encoded) as Float32Array;
 
     for (let i = 0; i < decoded.length; i++) {
       expect(buffer[i]).toStrictEqual(decoded[i]);
@@ -322,8 +322,8 @@ describe("Decode buffer", () => {
     const buffer = new Float64Array(new ArrayBuffer(64));
     fillBuffer(buffer, (x) => x * 0.1);
 
-    const encoded = await encodeToFormData(buffer);
-    const decoded = decodeFormData(encoded) as Float64Array;
+    const encoded = await encode(buffer);
+    const decoded = decode(encoded) as Float64Array;
 
     for (let i = 0; i < decoded.length; i++) {
       expect(buffer[i]).toStrictEqual(decoded[i]);
@@ -334,8 +334,8 @@ describe("Decode buffer", () => {
     const buffer = new BigInt64Array(new ArrayBuffer(64));
     fillBuffer(buffer, (x) => BigInt(x));
 
-    const encoded = await encodeToFormData(buffer);
-    const decoded = decodeFormData(encoded) as BigInt64Array;
+    const encoded = await encode(buffer);
+    const decoded = decode(encoded) as BigInt64Array;
 
     for (let i = 0; i < decoded.length; i++) {
       expect(buffer[i]).toStrictEqual(decoded[i]);
@@ -346,8 +346,8 @@ describe("Decode buffer", () => {
     const buffer = new BigUint64Array(new ArrayBuffer(64));
     fillBuffer(buffer, (x) => BigInt(x));
 
-    const encoded = await encodeToFormData(buffer);
-    const decoded = decodeFormData(encoded) as BigUint64Array;
+    const encoded = await encode(buffer);
+    const decoded = decode(encoded) as BigUint64Array;
 
     for (let i = 0; i < decoded.byteLength; i++) {
       expect(buffer[i]).toStrictEqual(decoded[i]);
@@ -359,8 +359,8 @@ describe("Decode buffer", () => {
     const buffer = new DataView(data);
     fillBuffer(new Uint8Array(data), (x) => x);
 
-    const encoded = await encodeToFormData(buffer);
-    const decoded = decodeFormData(encoded) as DataView;
+    const encoded = await encode(buffer);
+    const decoded = decode(encoded) as DataView;
 
     for (let i = 0; i < decoded.byteLength; i++) {
       expect(buffer.getInt8(i)).toStrictEqual(decoded.getInt8(i));
@@ -375,7 +375,7 @@ describe("Decode with reviver and replacer", () => {
       regex: /^([a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})*$/i,
     };
 
-    const formData = await encodeToFormData(obj, (val) => {
+    const formData = await encode(obj, (val) => {
       if (val instanceof URL) {
         return `$1${val.href}`; // `$1` as tag for URL
       }
@@ -387,7 +387,7 @@ describe("Decode with reviver and replacer", () => {
       return undefined;
     });
 
-    const value: any = decodeFormData(formData, (val) => {
+    const value: any = decode(formData, (val) => {
       if (typeof val === "string" && val.startsWith("$1")) {
         return new URL(val.slice(2));
       }
