@@ -17,7 +17,8 @@ type BocchiCharacter = {
   name: string;
   instrument: string;
   age: number;
-  photos: FormData;
+  attachments: FormData;
+  photo: File;
   debutYear: Date;
   soloBand: boolean;
   favouriteFoods: Set<string>;
@@ -42,11 +43,15 @@ beforeAll(() => {
     // Set the mocked value
     mockCharacter = value;
 
-    for (const [_, file] of value.photos.entries()) {
+    // Write attachments
+    for (const [_, file] of value.attachments.entries()) {
       if (typeof file === "object") {
         await writeTempFile(file.name, file);
       }
     }
+
+    // Write photo
+    await writeTempFile(value.photo.name, value.photo);
 
     return c.json({ success: true });
   });
@@ -80,11 +85,15 @@ describe("Server and client FormData", () => {
       futureGoalPromise: new Promise((resolve) => {
         setTimeout(() => resolve("Become a Rock Star!"), 500);
       }),
-      photos: (() => {
+      attachments: (() => {
         const f = new FormData();
-        const file = readFileFromArtifacts("bocchi_tech_tips.jpg");
-        f.append("image_1", file, "bocchi.jpg");
+        const file = readFileFromArtifacts("bocchi_wiki.txt");
+        f.append("bocchi_wiki", file, "bocchi_wiki.txt");
         return f;
+      })(),
+      photo: (() => {
+        const file = readFileFromArtifacts("bocchi_tech_tips.jpg");
+        return new File([file], "bocchi.jpg");
       })(),
     };
 
@@ -112,7 +121,8 @@ describe("Server and client FormData", () => {
     await expect(mockCharacter?.futureGoalPromise).resolves.toStrictEqual(
       "Become a Rock Star!"
     );
-    expect(mockCharacter?.photos).toBeTruthy();
+    expect(mockCharacter?.attachments).toBeTruthy();
+    expect(mockCharacter?.photo).toBeTruthy();
 
     // Check if file exists
     expect(

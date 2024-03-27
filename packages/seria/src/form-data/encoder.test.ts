@@ -129,15 +129,22 @@ describe("Encode value", () => {
   test("Encode FormData with blob", async () => {
     const formData = new FormData();
     formData.set("fruit", "10");
-    formData.set(
-      "file",
-      new Blob(["h", "e", "l", "l", "o"], { type: "text/plain" })
-    );
+    formData.set("file", new Blob(["hello world"], { type: "text/plain" }));
 
     const value = await encode(formData);
     expect(value.get("0")).toStrictEqual(`"$K1"`);
     expect(value.get("1_fruit")).toStrictEqual(`10`);
     expect(value.get("1_file")).toBeInstanceOf(Blob);
+  });
+
+  test("Encode File", async () => {
+    const file = new File(["hello world"], "hello.txt", {
+      type: "text/plain",
+    });
+
+    const value = await encode(file);
+    expect(value.get("0")).toStrictEqual(`"$k1"`);
+    expect(value.get("1_file")).instanceOf(File);
   });
 });
 

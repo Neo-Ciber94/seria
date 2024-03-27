@@ -277,7 +277,7 @@ export function decode(
               const id = input.slice(2);
               const file = value.get(`${id}_file`);
 
-              if (!(file instanceof File)) {
+              if (!file) {
                 throw new Error(`File '${id}_file' was not found`);
               }
 
