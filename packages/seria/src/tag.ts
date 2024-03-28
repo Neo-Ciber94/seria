@@ -1,3 +1,10 @@
+
+// We are using a format similar to the used in the react source code,
+// the problem is that using more than 1 character may introduce unintended collisions if handle incorrectly,
+// for example: $NaN and $N could case an error if handle incorrectly during deserialization.
+// We may need to keep only 1 character in the future to be consistent and prevent collisions easily,
+// or  get a better mechanism to handle collitions on the first character.
+
 export const enum Tag {
   String = "$",
   Date = "D",
