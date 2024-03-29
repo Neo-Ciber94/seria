@@ -453,5 +453,21 @@ describe("Decode with reviver and replacer", () => {
   });
 });
 
+describe("Decode async iterator", async () => {
+  test("Should decode async iterator", async () => {
+    async function* gen() {
+      yield 1;
+      yield 2;
+    }
+
+    const formData = await encode(gen());
+    const value = decode(formData) as ReturnType<typeof gen>;
+
+    expect((await value.next()).value).toStrictEqual(1);
+    expect((await value.next()).value).toStrictEqual(2);
+    expect((await value.next()).done).toBeTruthy();
+  });
+});
+
 const delay = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));

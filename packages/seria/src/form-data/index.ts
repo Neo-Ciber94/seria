@@ -24,15 +24,24 @@ export async function encode(
   replacer?: Replacer
 ): Promise<FormData> {
   const formData = new FormData();
-  const { output, pendingPromises } = internal_encodeFormData(value, {
+  const result = internal_encodeFormData(value, {
     formData,
     replacer,
   });
 
-  await Promise.all(pendingPromises);
+  await Promise.all(result.pendingPromises);
 
-  for (let i = 0; i < output.length; i++) {
-    formData.set(String(i), JSON.stringify(output[i]));
+  // Then we drain all the values on the iterators
+  const generatorPromises = result.pendingGenerators.map(async (gen) => {
+    for await (const _ of gen) {
+      // nothing
+    }
+  });
+
+  await Promise.all(generatorPromises);
+
+  for (let i = 0; i < result.output.length; i++) {
+    formData.set(String(i), JSON.stringify(result.output[i]));
   }
 
   return formData;
@@ -47,13 +56,18 @@ export async function encode(
  */
 export function encodeSync(value: unknown, replacer?: Replacer): FormData {
   const formData = new FormData();
-  const { output, pendingPromises } = internal_encodeFormData(value, {
-    formData,
-    replacer,
-  });
+  const { output, pendingPromises, pendingGenerators } =
+    internal_encodeFormData(value, {
+      formData,
+      replacer,
+    });
 
   if (pendingPromises.length > 0) {
     throw new Error("Serialiation result have pending promises");
+  }
+
+  if (pendingGenerators.length > 0) {
+    throw new Error("Serialiation result have pending async generators");
   }
 
   for (let i = 0; i < output.length; i++) {
@@ -252,6 +266,38 @@ export function decode(
                 return Promise.resolve(resolvedValue);
               } catch {
                 throw new Error("Unable to resolve promise value");
+              }
+            }
+            case maybeTag[0] === Tag.AsyncIterator: {
+              const id = input.slice(2);
+              const json = value.get(id);
+
+              if (!json) {
+                throw new Error(`Unable to get async iterator '${id}'`);
+              }
+
+              const asyncIteratorValues = JSON.parse(String(json));
+
+              if (Array.isArray(asyncIteratorValues)) {
+                const length = asyncIteratorValues.length - 1;
+                const isDone = asyncIteratorValues[length] === "done";
+
+                const values = isDone
+                  ? asyncIteratorValues.slice(0, -1)
+                  : asyncIteratorValues;
+
+                const generator = (async function* () {
+                  for (const item of values) {
+                    const resolvedValue = deserizalizeValue(item);
+                    yield resolvedValue;
+                  }
+                })();
+
+                return generator;
+              } else {
+                throw new Error(
+                  "Failed to parse async iterator, expected array of values"
+                );
               }
             }
             case maybeTag[0] === Tag.FormData: {

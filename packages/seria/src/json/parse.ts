@@ -313,11 +313,11 @@ function internal_parseValue(value: string, opts?: Options) {
                 const length = asyncIteratorValues.length - 1;
                 const isDone = asyncIteratorValues[length] === "done";
 
-                const generator = (async function* () {
-                  const values = isDone
-                    ? asyncIteratorValues.slice(0, -1)
-                    : asyncIteratorValues;
+                const values = isDone
+                  ? asyncIteratorValues.slice(0, -1)
+                  : asyncIteratorValues;
 
+                const generator = (async function* () {
                   for (const item of values) {
                     const resolvedValue = deserizalizeValue(item);
                     yield resolvedValue;
