@@ -335,15 +335,15 @@ describe("stringify async iterator", () => {
     expect((await reader.read())?.done).toBeTruthy();
   });
 
-  test.only("Should stringify promise resolving to async iterator", async () => {
+  test("Should stringify promise resolving to async iterator", async () => {
     const gen = async function* () {
       yield 1;
       yield 2;
     };
-    const promise = Promise.resolve(gen());
 
+    const promise = Promise.resolve(gen());
     const json = await stringifyAsync(promise);
-    expect(json).toStrictEqual(`[$@1,$#2,[1,2]]`);
+    expect(json).toStrictEqual(`["$@1","$#2",[1,2,"done"]]`);
   });
 });
 

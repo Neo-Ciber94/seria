@@ -48,11 +48,11 @@ export function stringify(
     }
   );
 
-  if (pendingPromises.length > 0) {
+  if (pendingPromises().length > 0) {
     throw new Error("Serialiation result have pending promises");
   }
 
-  if (pendingGenerators.length > 0) {
+  if (pendingGenerators().length > 0) {
     throw new Error("Serialiation result have pending async generators");
   }
 
@@ -79,14 +79,15 @@ export async function stringifyAsync(
     }
   );
 
-  const generatorPromises = pendingGenerators.map(async (gen) => {
+  await Promise.all([...pendingPromises()]);
+
+  const generatorPromises = pendingGenerators().map(async (gen) => {
     for await (const _ of gen) {
       /* nothing */
     }
   });
 
-  await Promise.all([...pendingPromises, ...generatorPromises]);
-  console.log({ output, generatorPromises });
+  await Promise.all([...generatorPromises]);
   return JSON.stringify(output, null, space);
 }
 
@@ -115,7 +116,7 @@ export function stringifyToStream(
       const json = JSON.stringify(output, null, space);
       controller.enqueue(`${json}\n\n`);
 
-      const resolveGeneratorPromise = pendingGenerators.map(async (gen) => {
+      const resolveGeneratorPromise = pendingGenerators().map(async (gen) => {
         for await (const item of gen) {
           const asyncIteratorOutput = unsafe_writeOutput(
             Tag.AsyncIterator,
@@ -128,7 +129,7 @@ export function stringifyToStream(
         }
       });
 
-      const resolvePendingPromise = forEachPromise(pendingPromises, {
+      const resolvePendingPromise = forEachPromise(pendingPromises(), {
         async onResolved({ data, id }) {
           const resolved = trackPromise(id, Promise.resolve(data));
 
@@ -139,7 +140,7 @@ export function stringifyToStream(
             initialID: id,
           });
 
-          await Promise.all(serializedPromise.pendingPromises);
+          await Promise.all(serializedPromise.pendingPromises());
           const promiseJson = JSON.stringify(
             serializedPromise.output,
             null,
@@ -287,10 +288,9 @@ export function internal_serialize(
   output[0] = baseValue;
 
   checkWrittenValues();
-  const pendingPromises = Array.from(pendingPromisesMap.values());
-  const pendingGenerators = Array.from(pendingAsyncIteratorMap.values());
+  const pendingPromises = () => Array.from(pendingPromisesMap.values());
+  const pendingGenerators = () => Array.from(pendingAsyncIteratorMap.values());
 
-  console.log({ pendingPromises, pendingGenerators });
   return { output, pendingPromises, pendingGenerators };
 }
 
@@ -414,7 +414,6 @@ function serializeAsyncIterable(
   const generator = (async function* () {
     for await (const item of input) {
       const ret = context.encodeValue(item);
-      console.log({ ret });
 
       // Push the new generated value
       const items = [...((context.output[id] as any[]) || []), ret];
@@ -433,6 +432,7 @@ function serializeAsyncIterable(
   const tracked = trackAsyncIterable(id, generator);
   context.pendingAsyncIteratorMap.set(id, tracked);
   //console.log({ id, generator, map: context.pendingAsyncIteratorMap });
+
   return serializeTagValue(Tag.AsyncIterator, id);
 }
 
