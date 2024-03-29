@@ -5,7 +5,7 @@ import { Tag, isTypedArrayTag } from "../tag";
 import {
   isTrackingAsyncIterable,
   trackAsyncIterable,
-} from "../trackingAsyncIterator";
+} from "../trackingAsyncIterable";
 import { isTrackingPromise, trackPromise } from "../trackingPromise";
 import { base64ToBuffer, isPlainObject } from "../utils";
 

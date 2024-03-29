@@ -10,7 +10,7 @@ import { Tag } from "../tag";
 import {
   trackAsyncIterable,
   type TrackingAsyncIterable,
-} from "../trackingAsyncIterator";
+} from "../trackingAsyncIterable";
 
 type SerializeContext = {
   output: unknown[];

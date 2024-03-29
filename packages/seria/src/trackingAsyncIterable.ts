@@ -4,7 +4,7 @@ const TRACKING_ASYNC_ITERABLE_SYMBOL = Symbol("TRACKING_ASYNC_ITERABLE_SYMBOL");
 export type TrackingAsyncIterable<T, TContext = unknown> = AsyncIterable<T> & {
   id: number;
   context?: TContext;
-  [TRACKING_ASYNC_ITERABLE_SYMBOL]: symbol;
+  [TRACKING_ASYNC_ITERABLE_SYMBOL]: true;
 };
 
 export function trackAsyncIterable<T, TContext = unknown>(
@@ -15,7 +15,7 @@ export function trackAsyncIterable<T, TContext = unknown>(
   return Object.assign(asyncIterator, {
     id,
     context,
-    [TRACKING_ASYNC_ITERABLE_SYMBOL]: TRACKING_ASYNC_ITERABLE_SYMBOL,
+    [TRACKING_ASYNC_ITERABLE_SYMBOL]: true as const,
   });
 }
 
@@ -27,6 +27,6 @@ export function isTrackingAsyncIterable(
     typeof value === "object" &&
     typeof value.id === "number" &&
     typeof value[Symbol.asyncIterator] === "function" &&
-    value[TRACKING_ASYNC_ITERABLE_SYMBOL] === TRACKING_ASYNC_ITERABLE_SYMBOL
+    value[TRACKING_ASYNC_ITERABLE_SYMBOL] === true
   );
 }

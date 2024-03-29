@@ -2,7 +2,7 @@
 import { describe, expect, test } from "vitest";
 import { stringify, stringifyToStream, stringifyAsync } from "./stringify";
 import { parse, parseFromStream, internal_parseFromStream } from "./parse";
-import { type TrackingAsyncIterable } from "../trackingAsyncIterator";
+import { type TrackingAsyncIterable } from "../trackingAsyncIterable";
 
 describe("Parse value", () => {
   test("Parse string", () => {
