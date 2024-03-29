@@ -71,4 +71,20 @@ describe("Channel", () => {
 
     expect(receiver.recv()).toBeUndefined();
   });
+
+  test("Should iterate using next()", async () => {
+    const [sender, receiver] = createChannel<number>({ id: 1 });
+
+    setImmediate(() => {
+      sender.send(1);
+      sender.send(2);
+      sender.send(3);
+      sender.close();
+    });
+
+    expect((await receiver.next()).value).toStrictEqual(1);
+    expect((await receiver.next()).value).toStrictEqual(2);
+    expect((await receiver.next()).value).toStrictEqual(3);
+    expect((await receiver.next()).done).toBeTruthy();
+  });
 });

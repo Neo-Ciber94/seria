@@ -7,6 +7,7 @@ export type Sender<T> = {
 export type Receiver<T> = {
   id: number;
   recv: () => Promise<T> | undefined;
+  next: () => Promise<IteratorResult<T>>;
   isClosed: () => boolean;
   [Symbol.asyncIterator]: () => AsyncIterator<T>;
 };
@@ -67,6 +68,17 @@ export function createChannel<T>(options: ChannelOptions) {
     }
   }
 
+  async function next(): Promise<IteratorResult<T>> {
+    const promise = recv();
+
+    if (!promise) {
+      return { done: true, value: undefined };
+    }
+
+    const value = await promise;
+    return { value };
+  }
+
   const sender: Sender<T> = {
     id,
     send,
@@ -78,6 +90,7 @@ export function createChannel<T>(options: ChannelOptions) {
   const receiver: Receiver<T> = {
     id,
     recv,
+    next,
     isClosed: () => closed,
     [Symbol.asyncIterator]: asyncIterator,
   };
