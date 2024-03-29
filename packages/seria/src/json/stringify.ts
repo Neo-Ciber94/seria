@@ -87,6 +87,7 @@ export async function stringifyAsync(
   });
 
   await Promise.all([...pendingPromises, ...generatorPromises]);
+  console.log({ output, generatorPromises });
   return JSON.stringify(output, null, space);
 }
 
@@ -240,8 +241,8 @@ export function internal_serialize(
           }
 
           return serializePromise(input, context);
-        } else if (isAsyncIterator(input)) {
-          return serializeAsyncIterator(input, context);
+        } else if (isAsyncIterable(input)) {
+          return serializeAsyncIterable(input, context);
         }
         // Serialize typed arrrays
         else if (input instanceof ArrayBuffer) {
@@ -276,8 +277,9 @@ export function internal_serialize(
           );
         }
       }
-      case "function":
+      case "function": {
         throw new Error("Functions cannot be serialized");
+      }
       default:
         throw new Error(
           `Unreachable. Reaching this code should be considered a bug`
@@ -293,6 +295,7 @@ export function internal_serialize(
   const pendingPromises = Array.from(pendingPromisesMap.values());
   const pendingGenerators = Array.from(pendingAsyncIteratorMap.values());
 
+  console.log({ pendingPromises, pendingGenerators });
   return { output, pendingPromises, pendingGenerators };
 }
 
@@ -431,14 +434,15 @@ function serializeTypedArray(
   return serializeTagValue(tag, id);
 }
 
-function serializeAsyncIterator(
-  input: AsyncGenerator,
+function serializeAsyncIterable(
+  input: AsyncIterable<unknown>,
   context: SerializeContext
 ) {
   const id = context.nextId();
   const generator = (async function* () {
     for await (const item of input) {
       const ret = context.encodeValue(item);
+      console.log({ ret });
 
       // Push the new generated value
       const items = [...((context.output[id] as any[]) || []), ret];
@@ -454,8 +458,9 @@ function serializeAsyncIterator(
     yield "done";
   })();
 
-  const trackingIterator = trackAsyncIterable(id, generator);
-  context.pendingAsyncIteratorMap.set(id, trackingIterator);
+  const tracked = trackAsyncIterable(id, generator);
+  context.pendingAsyncIteratorMap.set(id, tracked);
+  //console.log({ id, generator, map: context.pendingAsyncIteratorMap });
   return serializeTagValue(Tag.AsyncIterator, id);
 }
 
@@ -472,10 +477,6 @@ function unsafe_writeOutput(tag: Tag, id: number, value: unknown) {
   return output;
 }
 
-function isAsyncIterator(value: any): value is AsyncGenerator {
-  return (
-    value != null &&
-    typeof value === "object" &&
-    typeof value[Symbol.asyncIterator] === "function"
-  );
+function isAsyncIterable(value: any): value is AsyncIterable<unknown> {
+  return value != null && typeof value[Symbol.asyncIterator] === "function";
 }

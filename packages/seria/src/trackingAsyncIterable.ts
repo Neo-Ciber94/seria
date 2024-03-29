@@ -24,7 +24,6 @@ export function isTrackingAsyncIterable(
 ): value is TrackingAsyncIterable<unknown> {
   return (
     value != null &&
-    typeof value === "object" &&
     typeof value.id === "number" &&
     typeof value[Symbol.asyncIterator] === "function" &&
     value[TRACKING_ASYNC_ITERABLE_SYMBOL] === true
