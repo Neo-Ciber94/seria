@@ -1,31 +1,26 @@
-export type Sender<T, TContext = unknown> = {
+export type Sender<T> = {
   id: number;
-  context?: TContext;
   send: (value: T | Promise<T>) => void;
   close: () => void;
 };
 
-export type Receiver<T, TContext = unknown> = {
+export type Receiver<T> = {
   id: number;
-  context?: TContext;
   recv: () => Promise<T> | undefined;
   isClosed: () => boolean;
   [Symbol.asyncIterator]: () => AsyncIterator<T>;
 };
 
-type ChannelOptions<TContext> = {
+type ChannelOptions = {
   id: number;
-  context?: TContext;
 };
 /**
  * Create a multi-producer and single consumer channel.
  * @param options Options used to create the channel.
  * @returns A tuple with the sender and receiver.
  */
-export function createChannel<T, TContext = unknown>(
-  options: ChannelOptions<TContext>
-) {
-  const { id, context } = options;
+export function createChannel<T>(options: ChannelOptions) {
+  const { id } = options;
   const promiseQueue: Promise<T>[] = [];
   let pendingResolve: ((value: T | Promise<T>) => void) | undefined = undefined;
   let closed = false;
@@ -72,18 +67,16 @@ export function createChannel<T, TContext = unknown>(
     }
   }
 
-  const sender: Sender<T, TContext> = {
+  const sender: Sender<T> = {
     id,
-    context,
     send,
     close: () => {
       closed = true;
     },
   };
 
-  const receiver: Receiver<T, TContext> = {
+  const receiver: Receiver<T> = {
     id,
-    context,
     recv,
     isClosed: () => closed,
     [Symbol.asyncIterator]: asyncIterator,

@@ -2,24 +2,13 @@ import { describe, expect, test } from "vitest";
 import { createChannel } from "./channel";
 
 describe("Channel", () => {
-  test("Should share id and context", () => {
+  test("Should share id", () => {
     const [sender, receiver] = createChannel<number>({
       id: 99,
-      context: {
-        values: [1, 2, 3],
-      },
     });
 
     expect(sender.id).toStrictEqual(99);
     expect(receiver.id).toStrictEqual(99);
-
-    expect(sender.context).toStrictEqual({
-      values: [1, 2, 3],
-    });
-
-    expect(receiver.context).toStrictEqual({
-      values: [1, 2, 3],
-    });
   });
 
   test("Should read channel values", async () => {
