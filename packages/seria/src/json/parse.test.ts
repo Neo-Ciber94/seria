@@ -2,6 +2,7 @@
 import { describe, expect, test } from "vitest";
 import { stringify, stringifyToStream, stringifyAsync } from "./stringify";
 import { parse, parseFromStream, internal_parseFromStream } from "./parse";
+import { TrackingAsyncIterator } from "../trackingAsyncIterator";
 
 describe("Parse value", () => {
   test("Parse string", () => {
@@ -480,6 +481,60 @@ describe("Custom parser with reviver and replacer", () => {
       url: new URL("http://127.0.0.1:3000/custom?text=hello&num=34"),
       regex: /^([a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})*$/i,
     });
+  });
+});
+
+describe("Parse async iterator", () => {
+  test("Should parse async iterator", async () => {
+    async function* gen() {
+      yield 1;
+      yield 2;
+      yield 3;
+    }
+
+    const json = await stringifyAsync(gen());
+    const asyncIterator = parse(json) as AsyncIterator<unknown>;
+
+    expect((await asyncIterator.next()).value).toStrictEqual(1);
+    expect((await asyncIterator.next()).value).toStrictEqual(2);
+    expect((await asyncIterator.next()).value).toStrictEqual(3);
+    expect((await asyncIterator.next()).done).toBeTruthy();
+  });
+
+  test("Should parse async iterator with promise", async () => {
+    async function* gen() {
+      yield delay(40).then(() => 99);
+
+      yield delay(40).then(() => 98);
+
+      await delay(100);
+      yield Promise.resolve(97);
+    }
+
+    const json = await stringifyAsync(gen());
+    const asyncIterator = parse(json) as AsyncIterator<unknown>;
+
+    expect((await asyncIterator.next()).value).toStrictEqual(99);
+    expect((await asyncIterator.next()).value).toStrictEqual(98);
+    expect((await asyncIterator.next()).value).toStrictEqual(97);
+    expect((await asyncIterator.next()).done).toBeTruthy();
+  });
+
+  test("Should parse async iterator with streaming", async () => {
+    async function* gen() {
+      yield { name: "Koito Yui" };
+      yield { lover: "Touko Nanami" };
+    }
+
+    const stream = stringifyToStream(gen());
+    const value = (await parseFromStream(
+      stream
+    )) as TrackingAsyncIterator<unknown>;
+    const iter = value[Symbol.asyncIterator]();
+
+    expect((await iter.next()).value).toStrictEqual({ name: "Koito Yui" });
+    expect((await iter.next()).value).toStrictEqual({ lover: "Touko Nanami" });
+    expect((await iter.next()).done).toBeTruthy();
   });
 });
 

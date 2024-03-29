@@ -8,7 +8,7 @@ import {
 import { bufferToBase64, isPlainObject } from "../utils";
 import { Tag } from "../tag";
 import {
-  trackAsyncIterator,
+  trackAsyncIterable,
   type TrackingAsyncIterator,
 } from "../trackingAsyncIterator";
 
@@ -454,7 +454,7 @@ function serializeAsyncIterator(
     yield "done";
   })();
 
-  const trackingIterator = trackAsyncIterator(id, generator);
+  const trackingIterator = trackAsyncIterable(id, generator);
   context.pendingAsyncIteratorMap.set(id, trackingIterator);
   return serializeTagValue(Tag.AsyncIterator, id);
 }

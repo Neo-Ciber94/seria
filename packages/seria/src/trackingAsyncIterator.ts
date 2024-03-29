@@ -1,22 +1,25 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-const TRACKING_ASYNC_ITERATOR_SYMBOL = Symbol("TRACKING_ASYNC_ITERATOR_SYMBOL");
+const TRACKING_ASYNC_ITERABLE_SYMBOL = Symbol("TRACKING_ASYNC_ITERABLE_SYMBOL");
 
-export type TrackingAsyncIterator<T> = AsyncIterable<T> & {
+export type TrackingAsyncIterator<T, TContext = unknown> = AsyncIterable<T> & {
   id: number;
-  [TRACKING_ASYNC_ITERATOR_SYMBOL]: symbol;
+  context?: TContext;
+  [TRACKING_ASYNC_ITERABLE_SYMBOL]: symbol;
 };
 
-export function trackAsyncIterator<T>(
+export function trackAsyncIterable<T, TContext = unknown>(
   id: number,
-  asyncIterator: AsyncIterable<T>
+  asyncIterator: AsyncIterable<T>,
+  context?: TContext
 ): TrackingAsyncIterator<T> {
   return Object.assign(asyncIterator, {
     id,
-    [TRACKING_ASYNC_ITERATOR_SYMBOL]: TRACKING_ASYNC_ITERATOR_SYMBOL,
+    context,
+    [TRACKING_ASYNC_ITERABLE_SYMBOL]: TRACKING_ASYNC_ITERABLE_SYMBOL,
   });
 }
 
-export function isTrackingAsyncIterator(
+export function isTrackingAsyncIterable(
   value: any
 ): value is TrackingAsyncIterator<unknown> {
   return (
@@ -24,6 +27,6 @@ export function isTrackingAsyncIterator(
     typeof value === "object" &&
     typeof value.id === "number" &&
     typeof value[Symbol.asyncIterator] === "function" &&
-    value[TRACKING_ASYNC_ITERATOR_SYMBOL] === TRACKING_ASYNC_ITERATOR_SYMBOL
+    value[TRACKING_ASYNC_ITERABLE_SYMBOL] === TRACKING_ASYNC_ITERABLE_SYMBOL
   );
 }

@@ -1,11 +1,11 @@
-type Sender<T, TContext = unknown> = {
+export type Sender<T, TContext = unknown> = {
   id: number;
   context?: TContext;
   send: (value: T | Promise<T>) => void;
   close: () => void;
 };
 
-type Receiver<T, TContext = unknown> = {
+export type Receiver<T, TContext = unknown> = {
   id: number;
   context?: TContext;
   recv: () => Promise<T> | undefined;
