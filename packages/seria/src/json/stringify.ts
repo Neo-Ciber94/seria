@@ -7,11 +7,16 @@ import {
 } from "../trackingPromise";
 import { bufferToBase64, isPlainObject } from "../utils";
 import { Tag } from "../tag";
+import {
+  trackAsyncIterator,
+  type TrackingAsyncIterator,
+} from "../trackingAsyncIterator";
 
 type SerializeContext = {
   output: unknown[];
   writtenValues: Map<number, unknown>;
   pendingPromisesMap: Map<number, TrackingPromise<any>>;
+  pendingAsyncIteratorMap: Map<number, TrackingAsyncIterator<any>>;
   space?: string | number;
   nextId: () => number;
   encodeValue: (input: any) => unknown;
@@ -36,13 +41,20 @@ export function stringify(
   replacer?: Replacer | null,
   space?: number | string
 ) {
-  const { output, pendingPromises } = internal_serialize(value, {
-    replacer,
-    space,
-  });
+  const { output, pendingPromises, pendingGenerators } = internal_serialize(
+    value,
+    {
+      replacer,
+      space,
+    }
+  );
 
   if (pendingPromises.length > 0) {
     throw new Error("Serialiation result have pending promises");
+  }
+
+  if (pendingGenerators.length > 0) {
+    throw new Error("Serialiation result have pending async generators");
   }
 
   return JSON.stringify(output, null, space);
@@ -60,11 +72,21 @@ export async function stringifyAsync(
   replacer?: Replacer | null,
   space?: number | string
 ) {
-  const { output, pendingPromises } = internal_serialize(value, {
-    replacer,
-    space,
+  const { output, pendingPromises, pendingGenerators } = internal_serialize(
+    value,
+    {
+      replacer,
+      space,
+    }
+  );
+
+  const generatorPromises = pendingGenerators.map(async (gen) => {
+    for await (const _ of gen) {
+      /* nothing */
+    }
   });
-  await Promise.all(pendingPromises);
+
+  await Promise.all([...pendingPromises, ...generatorPromises]);
   return JSON.stringify(output, null, space);
 }
 
@@ -80,16 +102,33 @@ export function stringifyToStream(
   replacer?: Replacer | null,
   space?: number | string
 ) {
-  const { output, pendingPromises } = internal_serialize(value, {
-    replacer,
-    space,
-  });
+  const { output, pendingPromises, pendingGenerators } = internal_serialize(
+    value,
+    {
+      replacer,
+      space,
+    }
+  );
+
   return new ReadableStream<string>({
     async start(controller) {
       const json = JSON.stringify(output, null, space);
       controller.enqueue(`${json}\n\n`);
 
-      await forEachPromise(pendingPromises, {
+      const resolveGeneratorPromise = pendingGenerators.map(async (gen) => {
+        for await (const item of gen) {
+          const asyncIteratorOutput = unsafe_writeOutput(
+            Tag.AsyncIterator,
+            gen.id,
+            [item]
+          );
+
+          const genJson = JSON.stringify(asyncIteratorOutput, null, space);
+          controller.enqueue(`${genJson}\n\n`);
+        }
+      });
+
+      const resolvePendingPromise = forEachPromise(pendingPromises, {
         async onResolved({ data, id }) {
           const resolved = trackPromise(id, Promise.resolve(data));
 
@@ -111,6 +150,8 @@ export function stringifyToStream(
         },
       });
 
+      await Promise.all([resolvePendingPromise, ...resolveGeneratorPromise]);
+
       controller.close();
     },
   });
@@ -130,6 +171,7 @@ export function internal_serialize(
   const { replacer, space, initialID = 1 } = opts;
   const writtenValues = new Map<number, unknown>();
   const pendingPromisesMap = new Map<number, TrackingPromise<any>>();
+  const pendingAsyncIteratorMap = new Map<number, TrackingAsyncIterator<any>>();
   const output: unknown[] = [];
   let id = initialID;
 
@@ -149,6 +191,7 @@ export function internal_serialize(
     output,
     writtenValues,
     pendingPromisesMap,
+    pendingAsyncIteratorMap,
     space,
     nextId,
     encodeValue,
@@ -197,6 +240,8 @@ export function internal_serialize(
           }
 
           return serializePromise(input, context);
+        } else if (isAsyncIterator(input)) {
+          return serializeAsyncIterator(input, context);
         }
         // Serialize typed arrrays
         else if (input instanceof ArrayBuffer) {
@@ -246,8 +291,9 @@ export function internal_serialize(
 
   checkWrittenValues();
   const pendingPromises = Array.from(pendingPromisesMap.values());
+  const pendingGenerators = Array.from(pendingAsyncIteratorMap.values());
 
-  return { output, pendingPromises };
+  return { output, pendingPromises, pendingGenerators };
 }
 
 function serializeNumber(input: number) {
@@ -347,6 +393,7 @@ function serializePromise(input: Promise<any>, context: SerializeContext) {
   return serializeTagValue(Tag.Promise, id);
 }
 
+// FIXME: Is this even being called?
 function serializeResolvedPromise(
   input: TrackingPromise<any>,
   context: SerializeContext
@@ -384,9 +431,51 @@ function serializeTypedArray(
   return serializeTagValue(tag, id);
 }
 
+function serializeAsyncIterator(
+  input: AsyncGenerator,
+  context: SerializeContext
+) {
+  const id = context.nextId();
+  const generator = (async function* () {
+    for await (const item of input) {
+      const ret = context.encodeValue(item);
+
+      // Push the new generated value
+      const items = [...((context.output[id] as any[]) || []), ret];
+      context.writtenValues.set(id, items);
+      context.checkWrittenValues();
+      yield ret;
+    }
+
+    // Notify is done
+    const items = [...((context.output[id] as any[]) || []), "done"];
+    context.writtenValues.set(id, items);
+    context.checkWrittenValues();
+    yield "done";
+  })();
+
+  const trackingIterator = trackAsyncIterator(id, generator);
+  context.pendingAsyncIteratorMap.set(id, trackingIterator);
+  return serializeTagValue(Tag.AsyncIterator, id);
+}
+
 /**
  * @internal
  */
 export function serializeTagValue(tag: Tag, value?: number | string) {
   return value ? `$${tag}${value}` : `$${tag}`;
+}
+
+function unsafe_writeOutput(tag: Tag, id: number, value: unknown) {
+  const output: unknown[] = [serializeTagValue(tag, id)];
+  output[id] = value;
+  return output;
+}
+
+function isAsyncIterator(value: any): value is AsyncGenerator {
+  return (
+    value != null &&
+    typeof value === "object" &&
+    typeof value[Symbol.asyncIterator] === "function"
+  );
 }

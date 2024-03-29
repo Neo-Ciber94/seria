@@ -181,6 +181,10 @@ describe("stringify value", () => {
 });
 
 describe("stringify promise", () => {
+  test("Should throw on pending promise", () => {
+    expect(() => stringify(Promise.resolve(99))).toThrow();
+  });
+
   test("stringify promise", async () => {
     const promise = (async () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -285,3 +289,52 @@ describe("stringify promise", () => {
     expect((await reader.read()).done).toBeTruthy();
   });
 });
+
+describe("stringify async iterator", () => {
+  test("Should throw on pending async generator", () => {
+    const gen = async function* () {
+      yield 1;
+    };
+
+    expect(() => stringify(gen())).toThrow();
+  });
+
+  test("Should stringify an async iterator", async () => {
+    const gen = async function* () {
+      yield 1;
+      yield 2;
+      yield 3;
+    };
+
+    const json = await stringifyAsync(gen());
+    expect(json).toStrictEqual(`["$#1",[1,2,3,"done"]]`);
+  });
+
+  test("Should stringify an async iterator to stream", async () => {
+    const gen = async function* () {
+      yield 1;
+      yield 2;
+
+      await delay(100);
+      yield Promise.resolve(3);
+    };
+
+    const reader = stringifyToStream(gen()).getReader();
+    const chunk_1 = (await reader.read())?.value;
+    const chunk_2 = (await reader.read())?.value;
+    const chunk_3 = (await reader.read())?.value;
+    const chunk_4 = (await reader.read())?.value;
+    const chunk_5 = (await reader.read())?.value;
+
+    expect(chunk_1).toStrictEqual(`["$#1"]\n\n`);
+    expect(chunk_2).toStrictEqual(`["$#1",[1]]\n\n`);
+    expect(chunk_3).toStrictEqual(`["$#1",[2]]\n\n`);
+    expect(chunk_4).toStrictEqual(`["$#1",[3]]\n\n`);
+    expect(chunk_5).toStrictEqual(`["$#1",["done"]]\n\n`);
+
+    expect((await reader.read())?.done).toBeTruthy();
+  });
+});
+
+const delay = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
