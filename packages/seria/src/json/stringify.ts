@@ -3,7 +3,6 @@ import {
   type TrackingPromise,
   trackPromise,
   forEachPromise,
-  isTrackingPromise,
 } from "../trackingPromise";
 import { bufferToBase64, isPlainObject } from "../utils";
 import { Tag } from "../tag";
@@ -236,10 +235,6 @@ export function internal_serialize(
         } else if (isPlainObject(input)) {
           return serializePlainObject(input, context);
         } else if (input instanceof Promise) {
-          if (isTrackingPromise(input) && input.status.state !== "pending") {
-            return serializeResolvedPromise(input, context);
-          }
-
           return serializePromise(input, context);
         } else if (isAsyncIterable(input)) {
           return serializeAsyncIterable(input, context);
@@ -394,29 +389,6 @@ function serializePromise(input: Promise<any>, context: SerializeContext) {
   const trackingPromise = trackPromise(id, resolvingPromise);
   context.pendingPromisesMap.set(id, trackingPromise);
   return serializeTagValue(Tag.Promise, id);
-}
-
-// FIXME: Is this even being called?
-function serializeResolvedPromise(
-  input: TrackingPromise<any>,
-  context: SerializeContext
-) {
-  const id = input.id;
-  const status = input.status;
-
-  switch (status.state) {
-    case "resolved": {
-      const ret = context.encodeValue(status.data);
-      context.writtenValues.set(id, ret);
-      context.checkWrittenValues(); // Update the values with the new one
-      break;
-    }
-    case "rejected": {
-      throw status.error;
-    }
-    default:
-      throw new Error(`Promise still pending: ${id}`);
-  }
 }
 
 function serializeArrayBuffer(input: ArrayBuffer, context: SerializeContext) {
