@@ -9,14 +9,14 @@ import { bufferToBase64, isPlainObject } from "../utils";
 import { Tag } from "../tag";
 import {
   trackAsyncIterable,
-  type TrackingAsyncIterator,
+  type TrackingAsyncIterable,
 } from "../trackingAsyncIterator";
 
 type SerializeContext = {
   output: unknown[];
   writtenValues: Map<number, unknown>;
   pendingPromisesMap: Map<number, TrackingPromise<any>>;
-  pendingAsyncIteratorMap: Map<number, TrackingAsyncIterator<any>>;
+  pendingAsyncIteratorMap: Map<number, TrackingAsyncIterable<any>>;
   space?: string | number;
   nextId: () => number;
   encodeValue: (input: any) => unknown;
@@ -171,7 +171,7 @@ export function internal_serialize(
   const { replacer, space, initialID = 1 } = opts;
   const writtenValues = new Map<number, unknown>();
   const pendingPromisesMap = new Map<number, TrackingPromise<any>>();
-  const pendingAsyncIteratorMap = new Map<number, TrackingAsyncIterator<any>>();
+  const pendingAsyncIteratorMap = new Map<number, TrackingAsyncIterable<any>>();
   const output: unknown[] = [];
   let id = initialID;
 

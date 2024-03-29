@@ -2,7 +2,7 @@
 import { describe, expect, test } from "vitest";
 import { stringify, stringifyToStream, stringifyAsync } from "./stringify";
 import { parse, parseFromStream, internal_parseFromStream } from "./parse";
-import { TrackingAsyncIterator } from "../trackingAsyncIterator";
+import { type TrackingAsyncIterable } from "../trackingAsyncIterator";
 
 describe("Parse value", () => {
   test("Parse string", () => {
@@ -529,7 +529,7 @@ describe("Parse async iterator", () => {
     const stream = stringifyToStream(gen());
     const value = (await parseFromStream(
       stream
-    )) as TrackingAsyncIterator<unknown>;
+    )) as TrackingAsyncIterable<unknown>;
     const iter = value[Symbol.asyncIterator]();
 
     expect((await iter.next()).value).toStrictEqual({ name: "Koito Yui" });
