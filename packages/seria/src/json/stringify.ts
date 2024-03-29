@@ -48,11 +48,11 @@ export function stringify(
     }
   );
 
-  if (pendingPromises().length > 0) {
+  if (pendingPromises.length > 0) {
     throw new Error("Serialiation result have pending promises");
   }
 
-  if (pendingGenerators().length > 0) {
+  if (pendingGenerators.length > 0) {
     throw new Error("Serialiation result have pending async generators");
   }
 
@@ -71,24 +71,23 @@ export async function stringifyAsync(
   replacer?: Replacer | null,
   space?: number | string
 ) {
-  const { output, pendingPromises, pendingGenerators } = internal_serialize(
-    value,
-    {
-      replacer,
-      space,
-    }
-  );
+  const result = internal_serialize(value, {
+    replacer,
+    space,
+  });
 
-  await Promise.all([...pendingPromises()]);
+  // We need to resolve promises first in case any return an async iterator
+  await Promise.all(result.pendingPromises);
 
-  const generatorPromises = pendingGenerators().map(async (gen) => {
+  // Then we drain all the values on the iterators
+  const generatorPromises = result.pendingGenerators.map(async (gen) => {
     for await (const _ of gen) {
-      /* nothing */
+      // nothing
     }
   });
 
-  await Promise.all([...generatorPromises]);
-  return JSON.stringify(output, null, space);
+  await Promise.all(generatorPromises);
+  return JSON.stringify(result.output, null, space);
 }
 
 /**
@@ -116,7 +115,7 @@ export function stringifyToStream(
       const json = JSON.stringify(output, null, space);
       controller.enqueue(`${json}\n\n`);
 
-      const resolveGeneratorPromise = pendingGenerators().map(async (gen) => {
+      const resolveGeneratorPromise = pendingGenerators.map(async (gen) => {
         for await (const item of gen) {
           const asyncIteratorOutput = unsafe_writeOutput(
             Tag.AsyncIterator,
@@ -129,7 +128,7 @@ export function stringifyToStream(
         }
       });
 
-      const resolvePendingPromise = forEachPromise(pendingPromises(), {
+      const resolvePendingPromise = forEachPromise(pendingPromises, {
         async onResolved({ data, id }) {
           const resolved = trackPromise(id, Promise.resolve(data));
 
@@ -140,7 +139,7 @@ export function stringifyToStream(
             initialID: id,
           });
 
-          await Promise.all(serializedPromise.pendingPromises());
+          await Promise.all(serializedPromise.pendingPromises);
           const promiseJson = JSON.stringify(
             serializedPromise.output,
             null,
@@ -288,10 +287,16 @@ export function internal_serialize(
   output[0] = baseValue;
 
   checkWrittenValues();
-  const pendingPromises = () => Array.from(pendingPromisesMap.values());
-  const pendingGenerators = () => Array.from(pendingAsyncIteratorMap.values());
 
-  return { output, pendingPromises, pendingGenerators };
+  return {
+    output,
+    get pendingPromises() {
+      return Array.from(pendingPromisesMap.values());
+    },
+    get pendingGenerators() {
+      return Array.from(pendingAsyncIteratorMap.values());
+    },
+  };
 }
 
 function serializeNumber(input: number) {

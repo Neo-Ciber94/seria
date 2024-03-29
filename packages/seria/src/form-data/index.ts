@@ -29,7 +29,7 @@ export async function encode(
     replacer,
   });
 
-  await Promise.all(pendingPromises());
+  await Promise.all(pendingPromises);
 
   for (let i = 0; i < output.length; i++) {
     formData.set(String(i), JSON.stringify(output[i]));
@@ -52,7 +52,7 @@ export function encodeSync(value: unknown, replacer?: Replacer): FormData {
     replacer,
   });
 
-  if (pendingPromises().length > 0) {
+  if (pendingPromises.length > 0) {
     throw new Error("Serialiation result have pending promises");
   }
 
