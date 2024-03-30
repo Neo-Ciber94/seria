@@ -34,8 +34,8 @@ const config: Config = {
     async function tailwindCssPlugin() {
       return {
         name: "docusaurus-tailwindcss",
-        // Appends TailwindCSS and AutoPrefixer.
         configurePostCss(postcssOptions) {
+          // Appends TailwindCSS and AutoPrefixer.
           // eslint-disable-next-line @typescript-eslint/no-var-requires
           postcssOptions.plugins.push(require("tailwindcss"));
           // eslint-disable-next-line @typescript-eslint/no-var-requires
