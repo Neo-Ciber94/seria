@@ -1,5 +1,12 @@
 # Seria
 
+[![CI][ci-badge]][ci-link] [![npm version][npm-badge]][npm-link]
+
+[ci-badge]: https://github.com/Neo-Ciber94/seria/actions/workflows/ci.yml/badge.svg
+[ci-link]: https://github.com/Neo-Ciber94/seria/actions/workflows/ci.yml
+[npm-badge]: https://badge.fury.io/js/seria.svg
+[npm-link]: https://badge.fury.io/js/seria
+
 Seria is a serialization and deserialization library that goes beyond the conventional capabilities of JSON. It provides seamless handling for various data types, including those that JSON cannot handle directly.
 
 > This library is inspired on the new serialization capabilities `react` provides for server actions.
