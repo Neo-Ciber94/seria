@@ -43,10 +43,10 @@ const value = seria.parse(json);
 Seria also supports encoding and decoding FormData:
 
 ```ts
-import { encodeToFormData, decodeFormData } from "seria/form-data";
+import { encode, decode } from "seria/form-data";
 
-const formData = await encodeToFormData(value);
-const value = decodeFormData(formData);
+const formData = encode(value);
+const value = decode(formData);
 ```
 
 ### Stream Handling
