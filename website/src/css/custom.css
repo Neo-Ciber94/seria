@@ -33,6 +33,29 @@
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
 
+/* 
+Minifier fail to handle this:
+
 .prism-code-editor {
   @apply w-full xl:w-[600px] xl:min-h-[300px] text-xs sm:text-sm pt-2;
+} */
+
+.prism-code-editor {
+  width: 100%;
+  min-width: 600px;
+  min-height: 300px;
+  font-size: 0.875rem; /* equivalent to text-xs */
+  padding-top: 0.5rem; /* equivalent to pt-2 */
+}
+
+@media (min-width: 640px) {
+  .prism-code-editor {
+    font-size: 0.875rem; /* equivalent to text-xs */
+  }
+}
+
+@media (min-width: 768px) {
+  .prism-code-editor {
+    font-size: 1rem; /* equivalent to text-sm for medium screens and up */
+  }
 }

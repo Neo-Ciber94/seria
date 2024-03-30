@@ -38,12 +38,8 @@ const config: Config = {
         configurePostCss(postcssOptions) {
           // eslint-disable-next-line @typescript-eslint/no-var-requires
           postcssOptions.plugins.push(require("tailwindcss"));
-
           // eslint-disable-next-line @typescript-eslint/no-var-requires
           postcssOptions.plugins.push(require("autoprefixer"));
-
-          // eslint-disable-next-line @typescript-eslint/no-var-requires
-          postcssOptions.plugins.push(require("postcss-import"));
           return postcssOptions;
         },
       };
