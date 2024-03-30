@@ -3,7 +3,7 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
-import { decode, encode } from "../src/form-data";
+import { decode, encodeAsync } from "../src/form-data";
 import fs from "fs";
 import path from "path";
 import { FormData as UndiciFormData } from "undici";
@@ -97,7 +97,7 @@ describe("Server and client FormData", () => {
       })(),
     };
 
-    const bodyFormData = await encode(hitori);
+    const bodyFormData = await encodeAsync(hitori);
     const res = await fetch(`http://127.0.0.1:${PORT}/upload`, {
       method: "POST",
       body: bodyFormData,

@@ -16,7 +16,7 @@ type SerializeContext = {
   output: unknown[];
   writtenValues: Map<number, unknown>;
   pendingPromisesMap: Map<number, TrackingPromise<any>>;
-  pendingAsyncIteratorMap: Map<number, TrackingAsyncIterable<any>>;
+  pendingIteratorsMap: Map<number, TrackingAsyncIterable<any>>;
   space?: string | number;
   nextId: () => number;
   encodeValue: (input: any) => unknown;
@@ -41,7 +41,7 @@ export function stringify(
   replacer?: Replacer | null,
   space?: number | string
 ) {
-  const { output, pendingPromises, pendingGenerators } = internal_serialize(
+  const { output, pendingPromises, pendingIterators } = internal_serialize(
     value,
     {
       replacer,
@@ -53,8 +53,8 @@ export function stringify(
     throw new Error("Serialiation result have pending promises");
   }
 
-  if (pendingGenerators.length > 0) {
-    throw new Error("Serialiation result have pending async generators");
+  if (pendingIterators.length > 0) {
+    throw new Error("Serialiation result have pending async iterators");
   }
 
   return JSON.stringify(output, null, space);
@@ -80,14 +80,14 @@ export async function stringifyAsync(
   // We need to resolve promises first in case any return an async iterator
   await Promise.all(result.pendingPromises);
 
-  // Then we drain all the values on the iterators
-  const generatorPromises = result.pendingGenerators.map(async (gen) => {
+  // Then we drain all the values on the async iterators
+  const iteratorPromises = result.pendingIterators.map(async (gen) => {
     for await (const _ of gen) {
       // nothing
     }
   });
 
-  await Promise.all(generatorPromises);
+  await Promise.all(iteratorPromises);
   return JSON.stringify(result.output, null, space);
 }
 
@@ -111,7 +111,7 @@ export function stringifyToStream(
   return new ReadableStream<string>({
     async start(controller) {
       const json = JSON.stringify(result.output, null, space);
-      const pendingAsyncIteratorsMap = new Map<
+      const pendingIteratorsMap = new Map<
         number,
         TrackingAsyncIterable<unknown>
       >();
@@ -135,9 +135,9 @@ export function stringifyToStream(
             space
           );
 
-          if (serializedPromise.pendingGenerators.length > 0) {
-            for (const gen of serializedPromise.pendingGenerators) {
-              pendingAsyncIteratorsMap.set(gen.id, gen);
+          if (serializedPromise.pendingIterators.length > 0) {
+            for (const gen of serializedPromise.pendingIterators) {
+              pendingIteratorsMap.set(gen.id, gen);
             }
           }
 
@@ -145,32 +145,28 @@ export function stringifyToStream(
         },
       });
 
-      if (result.pendingGenerators.length > 0) {
-        for (const gen of result.pendingGenerators) {
-          pendingAsyncIteratorsMap.set(gen.id, gen);
+      if (result.pendingIterators.length > 0) {
+        for (const gen of result.pendingIterators) {
+          pendingIteratorsMap.set(gen.id, gen);
         }
       }
 
-      const pendingAsyncIterators = Array.from(
-        pendingAsyncIteratorsMap.values()
-      );
+      const pendingIterators = Array.from(pendingIteratorsMap.values());
 
-      const resolveGeneratorPromise = pendingAsyncIterators.map(
-        async (iter) => {
-          for await (const item of iter) {
-            const asyncIteratorOutput = unsafe_writeOutput(
-              Tag.AsyncIterator,
-              iter.id,
-              [item]
-            );
+      const resolveIterators = pendingIterators.map(async (iter) => {
+        for await (const item of iter) {
+          const asyncIteratorOutput = unsafe_writeOutput(
+            Tag.AsyncIterator,
+            iter.id,
+            [item]
+          );
 
-            const genJson = JSON.stringify(asyncIteratorOutput, null, space);
-            controller.enqueue(`${genJson}\n\n`);
-          }
+          const genJson = JSON.stringify(asyncIteratorOutput, null, space);
+          controller.enqueue(`${genJson}\n\n`);
         }
-      );
+      });
 
-      await Promise.all(resolveGeneratorPromise);
+      await Promise.all(resolveIterators);
       controller.close();
     },
   });
@@ -190,7 +186,7 @@ export function internal_serialize(
   const { replacer, space, initialID = 1 } = opts;
   const writtenValues = new Map<number, unknown>();
   const pendingPromisesMap = new Map<number, TrackingPromise<any>>();
-  const pendingAsyncIteratorMap = new Map<number, TrackingAsyncIterable<any>>();
+  const pendingIteratorsMap = new Map<number, TrackingAsyncIterable<any>>();
   const output: unknown[] = [];
   let id = initialID;
 
@@ -210,7 +206,7 @@ export function internal_serialize(
     output,
     writtenValues,
     pendingPromisesMap,
-    pendingAsyncIteratorMap,
+    pendingIteratorsMap,
     space,
     nextId,
     encodeValue,
@@ -312,8 +308,8 @@ export function internal_serialize(
     get pendingPromises() {
       return Array.from(pendingPromisesMap.values());
     },
-    get pendingGenerators() {
-      return Array.from(pendingAsyncIteratorMap.values());
+    get pendingIterators() {
+      return Array.from(pendingIteratorsMap.values());
     },
   };
 }
@@ -484,7 +480,7 @@ function serializeAsyncIterable(
   })();
 
   const tracked = trackAsyncIterable(id, generator);
-  context.pendingAsyncIteratorMap.set(id, tracked);
+  context.pendingIteratorsMap.set(id, tracked);
   return serializeTagValue(Tag.AsyncIterator, id);
 }
 

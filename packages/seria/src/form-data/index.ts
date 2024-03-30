@@ -14,12 +14,44 @@ import { base64ToBuffer } from "../utils";
 import type { FormData as UndiciFormData } from "undici";
 
 /**
+ * Encodes a value into a `FormData`.
+ * @param value The value to encode.
+ * @param replacer Converts a value to string.
+ * @returns The value encoded as `FormData`.
+ * @throws If the value is or have any promise.
+ */
+export function encode(value: unknown, replacer?: Replacer): FormData {
+  const formData = new FormData();
+  const { output, pendingPromises, pendingIterators } = internal_encodeFormData(
+    value,
+    {
+      formData,
+      replacer,
+    }
+  );
+
+  if (pendingPromises.length > 0) {
+    throw new Error("Serialiation result have pending promises");
+  }
+
+  if (pendingIterators.length > 0) {
+    throw new Error("Serialiation result have pending async iterators");
+  }
+
+  for (let i = 0; i < output.length; i++) {
+    formData.set(String(i), JSON.stringify(output[i]));
+  }
+
+  return formData;
+}
+
+/**
  * Encodes a value into a `FormData`, resolving all it's promises if any.
  * @param value The value to encode.
  * @param replacer Converts a value to string.
  * @returns The value encoded as `FormData`.
  */
-export async function encode(
+export async function encodeAsync(
   value: unknown,
   replacer?: Replacer
 ): Promise<FormData> {
@@ -31,47 +63,17 @@ export async function encode(
 
   await Promise.all(result.pendingPromises);
 
-  // Then we drain all the values on the iterators
-  const generatorPromises = result.pendingGenerators.map(async (gen) => {
-    for await (const _ of gen) {
+  // Then we drain all the values on the async iterators
+  const iteratorPromises = result.pendingIterators.map(async (iter) => {
+    for await (const _ of iter) {
       // nothing
     }
   });
 
-  await Promise.all(generatorPromises);
+  await Promise.all(iteratorPromises);
 
   for (let i = 0; i < result.output.length; i++) {
     formData.set(String(i), JSON.stringify(result.output[i]));
-  }
-
-  return formData;
-}
-
-/**
- * Encodes a value into a `FormData`.
- * @param value The value to encode.
- * @param replacer Converts a value to string.
- * @returns The value encoded as `FormData`.
- * @throws If the value is or have any promise.
- */
-export function encodeSync(value: unknown, replacer?: Replacer): FormData {
-  const formData = new FormData();
-  const { output, pendingPromises, pendingGenerators } =
-    internal_encodeFormData(value, {
-      formData,
-      replacer,
-    });
-
-  if (pendingPromises.length > 0) {
-    throw new Error("Serialiation result have pending promises");
-  }
-
-  if (pendingGenerators.length > 0) {
-    throw new Error("Serialiation result have pending async generators");
-  }
-
-  for (let i = 0; i < output.length; i++) {
-    formData.set(String(i), JSON.stringify(output[i]));
   }
 
   return formData;
