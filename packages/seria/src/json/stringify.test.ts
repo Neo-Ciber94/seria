@@ -345,6 +345,46 @@ describe("stringify async iterator", () => {
     const json = await stringifyAsync(promise);
     expect(json).toStrictEqual(`["$@1","$#2",[1,2,"done"]]`);
   });
+
+  test.only("Should stringify promise resolving to async iterator to stream", async () => {
+    const gen = async function* () {
+      yield 1;
+      yield 2;
+      yield delay(100).then(() => 3);
+    };
+
+    const promise = Promise.resolve(gen());
+    const reader = stringifyToStream(promise).getReader();
+
+    // while (true) {
+    //   const { done, value } = await reader.read();
+
+    //   if (done) {
+    //     break;
+    //   }
+
+    //   console.log(value);
+    // }
+
+    const chunk_1 = (await reader.read())?.value;
+    const chunk_2 = (await reader.read())?.value;
+    const chunk_3 = (await reader.read())?.value;
+    const chunk_4 = (await reader.read())?.value;
+    const chunk_5 = (await reader.read())?.value;
+    const chunk_6 = (await reader.read())?.value;
+    const chunk_7 = (await reader.read())?.value;
+
+    expect(chunk_1).toStrictEqual(`["$@1"]\n\n`);
+    expect(chunk_2).toStrictEqual(`["$@1","$#2"]\n\n`);
+    expect(chunk_3).toStrictEqual(`["$#2",null,[1]]\n\n`);
+    expect(chunk_4).toStrictEqual(`["$#2",null,[2]]\n\n`);
+    expect(chunk_5).toStrictEqual(`["$#2",null,[3]]\n\n`);
+    expect(chunk_6).toStrictEqual(`["$#2",null,["done"]]\n\n`);
+    expect(chunk_7).toStrictEqual(`["$#2",null,["done"]]\n\n`);
+
+    console.log({ chunk_7 })
+    expect((await reader.read())?.done).toBeTruthy();
+  });
 });
 
 const delay = (ms: number) =>

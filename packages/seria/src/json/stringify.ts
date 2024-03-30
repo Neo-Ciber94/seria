@@ -102,33 +102,18 @@ export function stringifyToStream(
   replacer?: Replacer | null,
   space?: number | string
 ) {
-  const { output, pendingPromises, pendingGenerators } = internal_serialize(
-    value,
-    {
-      replacer,
-      space,
-    }
-  );
+  const result = internal_serialize(value, {
+    replacer,
+    space,
+  });
 
   return new ReadableStream<string>({
     async start(controller) {
-      const json = JSON.stringify(output, null, space);
+      const json = JSON.stringify(result.output, null, space);
+      const pendingAsyncIterators: TrackingAsyncIterable<unknown>[] = [];
       controller.enqueue(`${json}\n\n`);
 
-      const resolveGeneratorPromise = pendingGenerators.map(async (gen) => {
-        for await (const item of gen) {
-          const asyncIteratorOutput = unsafe_writeOutput(
-            Tag.AsyncIterator,
-            gen.id,
-            [item]
-          );
-
-          const genJson = JSON.stringify(asyncIteratorOutput, null, space);
-          controller.enqueue(`${genJson}\n\n`);
-        }
-      });
-
-      const resolvePendingPromise = forEachPromise(pendingPromises, {
+      await forEachPromise(result.pendingPromises, {
         async onResolved({ data, id }) {
           const resolved = trackPromise(id, Promise.resolve(data));
 
@@ -146,12 +131,33 @@ export function stringifyToStream(
             space
           );
 
+          if (serializedPromise.pendingGenerators.length > 0) {
+            pendingAsyncIterators.push(...serializedPromise.pendingGenerators);
+          }
+
           controller.enqueue(`${promiseJson}\n\n`);
         },
       });
 
-      await Promise.all([resolvePendingPromise, ...resolveGeneratorPromise]);
+      if (result.pendingGenerators.length > 0) {
+        pendingAsyncIterators.push(...result.pendingGenerators);
+      }
 
+      const resolveGeneratorPromise = pendingAsyncIterators.map(async (gen) => {
+        for await (const item of gen) {
+          console.log({ id: gen.id, ctx: gen.context, item });
+          const asyncIteratorOutput = unsafe_writeOutput(
+            Tag.AsyncIterator,
+            gen.id,
+            [item]
+          );
+
+          const genJson = JSON.stringify(asyncIteratorOutput, null, space);
+          controller.enqueue(`${genJson}\n\n`);
+        }
+      });
+
+      await Promise.all(resolveGeneratorPromise);
       controller.close();
     },
   });

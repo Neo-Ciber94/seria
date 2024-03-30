@@ -537,6 +537,42 @@ describe("Parse async iterator", () => {
     expect((await iter.next()).value).toStrictEqual({ senpai: "Touko Nanami" });
     expect((await iter.next()).done).toBeTruthy();
   });
+
+  test("Should parse promise resolving to async iterator", async () => {
+    async function* gen() {
+      yield 1;
+      yield 2;
+      yield 3;
+    }
+
+    const promise = Promise.resolve(gen());
+    const json = await stringifyAsync(promise);
+    const value = parse(json) as typeof promise;
+    const iterable = await value;
+    const asyncIterator = iterable[Symbol.asyncIterator]();
+
+    expect((await asyncIterator.next()).value).toStrictEqual(1);
+    expect((await asyncIterator.next()).value).toStrictEqual(2);
+    expect((await asyncIterator.next()).value).toStrictEqual(3);
+    expect((await asyncIterator.next()).done).toBeTruthy();
+  });
+
+  test.only("Should parse promise returning async iterator with streaming", async () => {
+    async function* gen() {
+      yield { kouhai: "Koito Yui" };
+      yield { senpai: "Touko Nanami" };
+    }
+
+    const promise = Promise.resolve(gen());
+    const stream = stringifyToStream(promise);
+    const value = (await parseFromStream(stream)) as typeof promise;
+    const iterable = await value;
+    const iter = iterable[Symbol.asyncIterator]();
+
+    expect((await iter.next()).value).toStrictEqual({ kouhai: "Koito Yui" });
+    expect((await iter.next()).value).toStrictEqual({ senpai: "Touko Nanami" });
+    expect((await iter.next()).done).toBeTruthy();
+  });
 });
 
 const delay = (ms: number) =>
