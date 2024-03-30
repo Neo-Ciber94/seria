@@ -22,7 +22,7 @@ When deserializing the look at the value and check the type by looking the `tag`
 and the `id` let us know where the value is located on the `json` string, finally the data
 is just used to restore the object.
 
-## What about promises?
+## Promises
 
 Promises are represented as `$@<id>` following the previous format `@` is the tag we use for promises,
 the `id` is used to locate the result of the promise, when the promise is streamed and had not resolved
@@ -41,3 +41,39 @@ When the promise is streamed the data send have this format:
 ```
 
 When deserializing we just split the incoming stream `\n\n` and then parse each value.
+
+## Async Iterators
+
+Async iterators are represented with `$#<id>` the `id` let us know where the emitted item or items are located, the items always will be represented as an array.
+
+Let's use for example a generator like this:
+
+```js
+async function* gen() {
+  yield 1;
+  yield 2;
+  yield 3;
+}
+```
+
+When using `stringifyAsync` we'll wait for all the values and the emitted json will look like this:
+
+```js
+["$#1", [1,2,3,"done"]];
+```
+
+For async iterators we recommend using streaming instead, when using `stringifyToStream` we get:
+
+```js
+["$#1"]\n\n
+
+["$#1",[1]]\n\n
+
+["$#1",[2]]\n\n
+
+["$#1",[3]]\n\n
+
+["$#1",["done"]]\n\n
+```
+
+Notice the last item we emit is a string with the contents `"done"` as you may imagine it tell us the stop point of the iterator.

@@ -11,6 +11,7 @@ import {
   stringifyToStream,
 } from "../src";
 import { stream } from "hono/streaming";
+import { delay } from "../src/utils";
 
 const PORT = 5001;
 type Server = ReturnType<typeof serve>;
@@ -152,6 +153,3 @@ afterAll(() => {
     server.close();
   }
 });
-
-const delay = (ms: number) =>
-  new Promise<void>((resolve) => setTimeout(resolve, ms));

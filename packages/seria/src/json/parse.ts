@@ -1,6 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { createChannel, type Sender } from "../channel";
 import { deferredPromise, type DeferredPromise } from "../deferredPromise";
 import { Tag, isTypedArrayTag } from "../tag";
+import {
+  isTrackingAsyncIterable,
+  trackAsyncIterable,
+} from "../trackingAsyncIterable";
 import { isTrackingPromise, trackPromise } from "../trackingPromise";
 import { base64ToBuffer, isPlainObject } from "../utils";
 
@@ -76,15 +81,19 @@ export function internal_parseFromStream(
   reviver?: Reviver
 ) {
   const promisesMap = new Map<number, DeferredPromise<unknown>>();
+  const channelsMap = new Map<number, Sender<unknown>>();
   const reader = stream.getReader();
 
   return new ReadableStream<unknown>({
     async start(controller) {
       async function processChunk(jsonChunk: string) {
-        const { data, pendingPromises } = internal_parseValue(jsonChunk, {
-          deferPromises: true,
-          reviver,
-        });
+        const { data, pendingPromises, pendingChannels } = internal_parseValue(
+          jsonChunk,
+          {
+            deferPromises: true,
+            reviver,
+          }
+        );
 
         // Send the value
         controller.enqueue(data);
@@ -108,6 +117,34 @@ export function internal_parseFromStream(
               deferred.resolve(returnValue);
             } catch (err) {
               deferred.reject(err);
+            }
+          }
+        }
+
+        // Handle async iterators
+        {
+          if (pendingChannels.size > 0) {
+            for (const [id, channelSender] of pendingChannels.entries()) {
+              channelsMap.set(id, channelSender);
+            }
+          }
+
+          if (isTrackingAsyncIterable(data)) {
+            const sender = channelsMap.get(data.id);
+
+            if (!sender) {
+              throw new Error(
+                `AsyncIterator sender with id '${data.id}' was not found`
+              );
+            }
+
+            const isDone = data.context === "done";
+            for await (const item of data) {
+              sender.send(item);
+            }
+
+            if (isDone) {
+              sender.close();
             }
           }
         }
@@ -143,6 +180,8 @@ type Options = {
 function internal_parseValue(value: string, opts?: Options) {
   const { deferPromises = false, reviver } = opts || {};
   const pendingPromises = new Map<number, DeferredPromise<unknown>>();
+  const pendingChannels = new Map<number, Sender<unknown>>();
+
   const { references, base } = (function () {
     try {
       const references = JSON.parse(value) as readonly unknown[];
@@ -260,6 +299,44 @@ function internal_parseValue(value: string, opts?: Options) {
                 throw new Error("Unable to resolve promise value");
               }
             }
+            case maybeTag[0] === Tag.AsyncIterator: {
+              const id = parseTagId(input.slice(2));
+              const asyncIteratorValues = references[id];
+
+              if (!asyncIteratorValues) {
+                const [sender, receiver] = createChannel({ id });
+                pendingChannels.set(id, sender);
+                return receiver;
+              }
+
+              if (Array.isArray(asyncIteratorValues)) {
+                const length = asyncIteratorValues.length - 1;
+                const isDone = asyncIteratorValues[length] === "done";
+
+                const values = isDone
+                  ? asyncIteratorValues.slice(0, -1)
+                  : asyncIteratorValues;
+
+                const generator = (async function* () {
+                  for (const item of values) {
+                    const resolvedValue = deserizalizeValue(item);
+                    yield resolvedValue;
+                  }
+                })();
+
+                const trackedAsyncIterator = trackAsyncIterable(
+                  id,
+                  generator,
+                  isDone ? "done" : undefined
+                );
+
+                return trackedAsyncIterator;
+              } else {
+                throw new Error(
+                  "Failed to parse async iterator, expected array of values"
+                );
+              }
+            }
             case isTypedArrayTag(maybeTag[0]): {
               return deserializeBuffer(maybeTag[0], input, {
                 references,
@@ -299,7 +376,7 @@ function internal_parseValue(value: string, opts?: Options) {
   };
 
   const data = deserizalizeValue(base);
-  return { data, pendingPromises };
+  return { data, pendingPromises, pendingChannels };
 }
 
 function deserializeBuffer(tag: Tag, input: string, context: Context) {

@@ -2,6 +2,8 @@
 import { describe, expect, test } from "vitest";
 import { stringify, stringifyToStream, stringifyAsync } from "./stringify";
 import { parse, parseFromStream, internal_parseFromStream } from "./parse";
+import { type TrackingAsyncIterable } from "../trackingAsyncIterable";
+import { delay } from "../utils";
 
 describe("Parse value", () => {
   test("Parse string", () => {
@@ -483,5 +485,114 @@ describe("Custom parser with reviver and replacer", () => {
   });
 });
 
-const delay = (ms: number) =>
-  new Promise<void>((resolve) => setTimeout(resolve, ms));
+describe("Parse async iterator", () => {
+  test("Should parse async iterator", async () => {
+    async function* gen() {
+      yield 1;
+      yield 2;
+      yield 3;
+    }
+
+    const json = await stringifyAsync(gen());
+    const asyncIterator = parse(json) as AsyncIterator<unknown>;
+
+    expect((await asyncIterator.next()).value).toStrictEqual(1);
+    expect((await asyncIterator.next()).value).toStrictEqual(2);
+    expect((await asyncIterator.next()).value).toStrictEqual(3);
+    expect((await asyncIterator.next()).done).toBeTruthy();
+  });
+
+  test("Should parse async iterator with promise", async () => {
+    async function* gen() {
+      yield delay(40).then(() => 99);
+
+      yield delay(40).then(() => 98);
+
+      await delay(100);
+      yield Promise.resolve(97);
+    }
+
+    const json = await stringifyAsync(gen());
+    const value = parse(json) as AsyncIterable<unknown>;
+    const iter = value[Symbol.asyncIterator]();
+
+    expect((await iter.next()).value).toStrictEqual(99);
+    expect((await iter.next()).value).toStrictEqual(98);
+    expect((await iter.next()).value).toStrictEqual(97);
+    expect((await iter.next()).done).toBeTruthy();
+  });
+
+  test("Should parse async iterator with streaming", async () => {
+    async function* gen() {
+      yield { kouhai: "Koito Yui" };
+      yield { senpai: "Touko Nanami" };
+    }
+
+    const stream = stringifyToStream(gen());
+    const value = (await parseFromStream(
+      stream
+    )) as TrackingAsyncIterable<unknown>;
+    const iter = value[Symbol.asyncIterator]();
+
+    expect((await iter.next()).value).toStrictEqual({ kouhai: "Koito Yui" });
+    expect((await iter.next()).value).toStrictEqual({ senpai: "Touko Nanami" });
+    expect((await iter.next()).done).toBeTruthy();
+  });
+
+  test("Should parse promise resolving to async iterator", async () => {
+    async function* gen() {
+      yield 1;
+      yield 2;
+      yield 3;
+    }
+
+    const promise = Promise.resolve(gen());
+    const json = await stringifyAsync(promise);
+    const value = parse(json) as typeof promise;
+    const iterable = await value;
+    const asyncIterator = iterable[Symbol.asyncIterator]();
+
+    expect((await asyncIterator.next()).value).toStrictEqual(1);
+    expect((await asyncIterator.next()).value).toStrictEqual(2);
+    expect((await asyncIterator.next()).value).toStrictEqual(3);
+    expect((await asyncIterator.next()).done).toBeTruthy();
+  });
+
+  test("Should parse promise returning async iterator with streaming", async () => {
+    async function* gen() {
+      yield { kouhai: "Koito Yui" };
+      yield { senpai: "Touko Nanami" };
+    }
+
+    const promise = Promise.resolve(gen());
+    const stream = stringifyToStream(promise);
+    const value = (await parseFromStream(stream)) as typeof promise;
+    const iterable = await value;
+    const iter = iterable[Symbol.asyncIterator]();
+
+    expect((await iter.next()).value).toStrictEqual({ kouhai: "Koito Yui" });
+    expect((await iter.next()).value).toStrictEqual({ senpai: "Touko Nanami" });
+    expect((await iter.next()).done).toBeTruthy();
+  });
+
+  test("Should parse object with async iterators", async () => {
+    async function* range(from: number, to: number) {
+      for (let i = from; i <= to; i++) {
+        yield i;
+      }
+    }
+
+    const obj = {
+      zeroToFive: range(0, 5),
+      oneToThree: range(1, 3),
+      fiveToNine: range(5, 9),
+    };
+
+    const json = await stringifyAsync(obj);
+    const value = parse(json) as typeof obj;
+
+    await expect(value.zeroToFive).toMatchSequence([0, 1, 2, 3, 4, 5]);
+    await expect(value.oneToThree).toMatchSequence([1, 2, 3]);
+    await expect(value.fiveToNine).toMatchSequence([5, 6, 7, 8, 9]);
+  });
+});

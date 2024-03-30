@@ -22,6 +22,7 @@ export const enum Tag {
 
   // Others
   File = "k",
+  AsyncIterator = "#",
 
   // Buffers
   ArrayBuffer = "A",

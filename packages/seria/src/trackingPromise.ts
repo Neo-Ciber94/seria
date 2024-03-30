@@ -9,7 +9,7 @@ type PromiseStatus<T> =
 export type TrackingPromise<T> = Promise<T> & {
   id: number;
   status: PromiseStatus<T>;
-  [TRACKING_PROMISE_SYMBOL]: symbol;
+  [TRACKING_PROMISE_SYMBOL]: true;
 };
 
 export function trackPromise<T>(
@@ -19,7 +19,7 @@ export function trackPromise<T>(
   const tracking = Object.assign(promise, {
     id,
     status: { state: "pending" },
-    [TRACKING_PROMISE_SYMBOL]: TRACKING_PROMISE_SYMBOL,
+    [TRACKING_PROMISE_SYMBOL]: true,
   }) as TrackingPromise<T>;
 
   tracking
@@ -46,7 +46,7 @@ export function isTrackingPromise(
     value != null &&
     typeof value.id === "number" &&
     typeof value.status === "object" &&
-    value[TRACKING_PROMISE_SYMBOL] === TRACKING_PROMISE_SYMBOL &&
+    value[TRACKING_PROMISE_SYMBOL] === true &&
     value instanceof Promise
   );
 }

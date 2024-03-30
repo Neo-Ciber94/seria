@@ -41,3 +41,6 @@ export function base64ToBuffer<T extends TypedArrayLike>(
 
   return new Constructor(bytes.buffer);
 }
+
+export const delay = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
