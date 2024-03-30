@@ -10,6 +10,7 @@ import {
   trackAsyncIterable,
   type TrackingAsyncIterable,
 } from "../trackingAsyncIterable";
+import { createChannel } from "../channel";
 
 type SerializeContext = {
   output: unknown[];
@@ -434,11 +435,41 @@ function serializeAsyncIterable(
   context: SerializeContext
 ) {
   const id = context.nextId();
-  const generator = (async function* () {
-    for await (const item of input) {
-      const ret = context.encodeValue(item);
+  const [sender, receiver] = createChannel({ id: 1 });
 
-      // Push the new generated value
+  // We emit the iterable to the receiver and flatten any nested async iterable.
+  // TODO: Check if this behaviour makes sense or we should:
+  // 1. Throw an exception and don't handle nested async iterables
+  // 2. Try to parse nested async iterables
+  async function playbackAsyncIterable(iter: AsyncIterable<unknown>) {
+    for await (const item of iter) {
+      if (isAsyncIterable(item)) {
+        await playbackAsyncIterable(item);
+      } else {
+        sender.send(item);
+      }
+    }
+  }
+
+  const generator = (async function* () {
+    // for await (const item of input) {
+    //   const ret = context.encodeValue(item);
+
+    //   // Push the new generated value
+    //   const items = [...((context.output[id] as any[]) || []), ret];
+    //   context.writtenValues.set(id, items);
+    //   context.checkWrittenValues();
+    //   yield ret;
+    // }
+
+    try {
+      await playbackAsyncIterable(input);
+    } finally {
+      sender.close();
+    }
+
+    for await (const item of receiver) {
+      const ret = context.encodeValue(item);
       const items = [...((context.output[id] as any[]) || []), ret];
       context.writtenValues.set(id, items);
       context.checkWrittenValues();
