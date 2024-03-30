@@ -557,7 +557,7 @@ describe("Parse async iterator", () => {
     expect((await asyncIterator.next()).done).toBeTruthy();
   });
 
-  test.only("Should parse promise returning async iterator with streaming", async () => {
+  test("Should parse promise returning async iterator with streaming", async () => {
     async function* gen() {
       yield { kouhai: "Koito Yui" };
       yield { senpai: "Touko Nanami" };

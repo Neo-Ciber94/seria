@@ -110,7 +110,10 @@ export function stringifyToStream(
   return new ReadableStream<string>({
     async start(controller) {
       const json = JSON.stringify(result.output, null, space);
-      const pendingAsyncIterators: TrackingAsyncIterable<unknown>[] = [];
+      const pendingAsyncIteratorsMap = new Map<
+        number,
+        TrackingAsyncIterable<unknown>
+      >();
       controller.enqueue(`${json}\n\n`);
 
       await forEachPromise(result.pendingPromises, {
@@ -132,7 +135,9 @@ export function stringifyToStream(
           );
 
           if (serializedPromise.pendingGenerators.length > 0) {
-            pendingAsyncIterators.push(...serializedPromise.pendingGenerators);
+            for (const gen of serializedPromise.pendingGenerators) {
+              pendingAsyncIteratorsMap.set(gen.id, gen);
+            }
           }
 
           controller.enqueue(`${promiseJson}\n\n`);
@@ -140,22 +145,29 @@ export function stringifyToStream(
       });
 
       if (result.pendingGenerators.length > 0) {
-        pendingAsyncIterators.push(...result.pendingGenerators);
+        for (const gen of result.pendingGenerators) {
+          pendingAsyncIteratorsMap.set(gen.id, gen);
+        }
       }
 
-      const resolveGeneratorPromise = pendingAsyncIterators.map(async (gen) => {
-        for await (const item of gen) {
-          console.log({ id: gen.id, ctx: gen.context, item });
-          const asyncIteratorOutput = unsafe_writeOutput(
-            Tag.AsyncIterator,
-            gen.id,
-            [item]
-          );
+      const pendingAsyncIterators = Array.from(
+        pendingAsyncIteratorsMap.values()
+      );
 
-          const genJson = JSON.stringify(asyncIteratorOutput, null, space);
-          controller.enqueue(`${genJson}\n\n`);
+      const resolveGeneratorPromise = pendingAsyncIterators.map(
+        async (iter) => {
+          for await (const item of iter) {
+            const asyncIteratorOutput = unsafe_writeOutput(
+              Tag.AsyncIterator,
+              iter.id,
+              [item]
+            );
+
+            const genJson = JSON.stringify(asyncIteratorOutput, null, space);
+            controller.enqueue(`${genJson}\n\n`);
+          }
         }
-      });
+      );
 
       await Promise.all(resolveGeneratorPromise);
       controller.close();
