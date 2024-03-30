@@ -34,8 +34,8 @@ const config: Config = {
     async function tailwindCssPlugin() {
       return {
         name: "docusaurus-tailwindcss",
+        // Appends TailwindCSS and AutoPrefixer.
         configurePostCss(postcssOptions) {
-          // Appends TailwindCSS and AutoPrefixer.
           // eslint-disable-next-line @typescript-eslint/no-var-requires
           postcssOptions.plugins.push(require("tailwindcss"));
           // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -55,8 +55,7 @@ const config: Config = {
           sidebarPath: "./sidebars.ts",
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
-          editUrl:
-            "https://github.com/Neo-Ciber94/seria/website/docs",
+          editUrl: "https://github.com/Neo-Ciber94/seria/website/docs",
           remarkPlugins: [
             [require("@docusaurus/remark-plugin-npm2yarn"), { sync: true }],
           ],
@@ -65,8 +64,7 @@ const config: Config = {
           showReadingTime: true,
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
-          editUrl:
-            "https://github.com/Neo-Ciber94/seria/website/docs",
+          editUrl: "https://github.com/Neo-Ciber94/seria/website/docs",
         },
         theme: {
           customCss: "./src/css/custom.css",
