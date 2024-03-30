@@ -11,7 +11,10 @@ Seria is a serialization and deserialization library that goes beyond the conven
 
 > This library is inspired on the new serialization capabilities `react` provides for server actions.
 
-[Checkout the docs](https://neo-ciber94.github.io/seria/)
+<div style="text-align: center;">
+  <img src="./website/static/img/logo.png" alt="seria logo" width="64" height="64">
+  <a href="https://neo-ciber94.github.io/seria/"><h1>seria - docs</h1></a>
+</div>
 
 ## Installation
 
@@ -95,4 +98,4 @@ Types supported by `seria` in comparison with the standard `JSON` object.
 | File\*            | ✅                    | ❌                   |
 | FormData\*        | ✅                    | ❌                   |
 
-> `File` and `FormData` is supported on `seria/form-data`.
+> `File` and `FormData` are supported on `seria/form-data`.
