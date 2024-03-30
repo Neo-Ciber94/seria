@@ -454,8 +454,6 @@ function serializeAsyncIterable(
 
   const tracked = trackAsyncIterable(id, generator);
   context.pendingAsyncIteratorMap.set(id, tracked);
-  //console.log({ id, generator, map: context.pendingAsyncIteratorMap });
-
   return serializeTagValue(Tag.AsyncIterator, id);
 }
 

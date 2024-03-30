@@ -310,6 +310,56 @@ describe("stringify async iterator", () => {
     expect(json).toStrictEqual(`["$#1",[1,2,3,"done"]]`);
   });
 
+  test("Should stringify an async iterator that yields async iterator", async () => {
+    async function* range(from: number, to: number) {
+      for (let i = from; i <= to; i++) {
+        yield i;
+      }
+    }
+
+    const gen = async function* () {
+      yield 1;
+      yield* range(2, 4);
+      yield 5;
+    };
+
+    const json = await stringifyAsync(gen());
+    expect(json).toStrictEqual(`["$#1",[1,2,3,4,5,"done"]]`);
+  });
+
+  test("Should stringify an async iterator that yields generators to stream", async () => {
+    async function* range(from: number, to: number) {
+      for (let i = from; i <= to; i++) {
+        yield i;
+      }
+    }
+
+    const gen = async function* () {
+      yield 1;
+      yield* range(2, 4);
+      yield delay(100).then(() => 5);
+    };
+
+    const reader = stringifyToStream(gen()).getReader();
+    const chunk_1 = (await reader.read())?.value;
+    const chunk_2 = (await reader.read())?.value;
+    const chunk_3 = (await reader.read())?.value;
+    const chunk_4 = (await reader.read())?.value;
+    const chunk_5 = (await reader.read())?.value;
+    const chunk_6 = (await reader.read())?.value;
+    const chunk_7 = (await reader.read())?.value;
+
+    expect(chunk_1).toStrictEqual(`["$#1"]\n\n`);
+    expect(chunk_2).toStrictEqual(`["$#1",[1]]\n\n`);
+    expect(chunk_3).toStrictEqual(`["$#1",[2]]\n\n`);
+    expect(chunk_4).toStrictEqual(`["$#1",[3]]\n\n`);
+    expect(chunk_5).toStrictEqual(`["$#1",[4]]\n\n`);
+    expect(chunk_6).toStrictEqual(`["$#1",[5]]\n\n`);
+    expect(chunk_7).toStrictEqual(`["$#1",["done"]]\n\n`);
+
+    expect((await reader.read())?.done).toBeTruthy();
+  });
+
   test("Should stringify an async iterator to stream", async () => {
     const gen = async function* () {
       yield 1;
@@ -346,7 +396,7 @@ describe("stringify async iterator", () => {
     expect(json).toStrictEqual(`["$@1","$#2",[1,2,"done"]]`);
   });
 
-  test.only("Should stringify promise resolving to async iterator to stream", async () => {
+  test("Should stringify promise resolving to async iterator to stream", async () => {
     const gen = async function* () {
       yield 1;
       yield 2;
