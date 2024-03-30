@@ -575,20 +575,24 @@ describe("Parse async iterator", () => {
     expect((await iter.next()).done).toBeTruthy();
   });
 
-  // test("Should parse object with async iterators", async () => {
-  //   async function* range(from: number, to: number) {
-  //     for (let i = from; i <= to; i++) {
-  //       yield i;
-  //     }
-  //   }
+  test("Should parse object with async iterators", async () => {
+    async function* range(from: number, to: number) {
+      for (let i = from; i <= to; i++) {
+        yield i;
+      }
+    }
 
-  //   const obj = {
-  //     zeroToFive: range(0, 5),
-  //     OneToThree: range(1, 3),
-  //     FiveToNine: range(5, 9),
-  //   };
+    const obj = {
+      zeroToFive: range(0, 5),
+      oneToThree: range(1, 3),
+      fiveToNine: range(5, 9),
+    };
 
-  //   const json = await stringifyAsync(obj);
-  //   const value = parse(json) as typeof obj;
-  // });
+    const json = await stringifyAsync(obj);
+    const value = parse(json) as typeof obj;
+
+    await expect(value.zeroToFive).toMatchSequence([0, 1, 2, 3, 4, 5]);
+    await expect(value.oneToThree).toMatchSequence([1, 2, 3]);
+    await expect(value.fiveToNine).toMatchSequence([5, 6, 7, 8, 9]);
+  });
 });
