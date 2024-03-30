@@ -31,7 +31,7 @@
     "react-dom": "^18.0.0",
     "react-icons": "^5.0.1",
     "react-syntax-highlighter": "^15.5.0",
-    "seria": "0.1.6",
+    "seria": "workspace:*",
     "tailwindcss": "^3.4.1"
   },
   "devDependencies": {

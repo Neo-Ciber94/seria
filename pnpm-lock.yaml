@@ -114,7 +114,7 @@ importers:
         specifier: ^15.5.0
         version: 15.5.0(react@18.2.0)
       seria:
-        specifier: 0.1.6
+        specifier: workspace:*
         version: link:../packages/seria
       tailwindcss:
         specifier: ^3.4.1
