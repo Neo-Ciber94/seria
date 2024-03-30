@@ -31,15 +31,19 @@ const config: Config = {
   },
 
   plugins: [
-    function tailwindCssPlugin() {
+    async function tailwindCssPlugin() {
       return {
         name: "docusaurus-tailwindcss",
         // Appends TailwindCSS and AutoPrefixer.
         configurePostCss(postcssOptions) {
           // eslint-disable-next-line @typescript-eslint/no-var-requires
           postcssOptions.plugins.push(require("tailwindcss"));
+
           // eslint-disable-next-line @typescript-eslint/no-var-requires
           postcssOptions.plugins.push(require("autoprefixer"));
+
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          postcssOptions.plugins.push(require("postcss-import"));
           return postcssOptions;
         },
       };
