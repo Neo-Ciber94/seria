@@ -12,7 +12,7 @@ Seria is a serialization and deserialization library that goes beyond the conven
 > This library is inspired on the new serialization capabilities `react` provides for server actions.
 
 <div align="center">
-  <img src="./website/static/img/logo.png" alt="seria logo" width="64" height="64">
+  <img src="https://raw.githubusercontent.com/Neo-Ciber94/seria/main/website/static/img/logo.png" alt="seria logo" width="64" height="64">
   <a href="https://neo-ciber94.github.io/seria/"><h1>seria - docs</h1></a>
 </div>
 
