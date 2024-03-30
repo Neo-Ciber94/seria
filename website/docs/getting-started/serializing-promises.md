@@ -27,7 +27,7 @@ const json = seria.stringifyAsync(hero);
 
 For most cases this is enough, `stringifyAsync` will await all the promises found before returning the serialized value that then can be parsed back with `seria.parse`, all the promises returned by `parse` with be promises which value is just a `Promise.resolve(value)`.
 
-But when you are communicating between a server and client maybe you don't want your client to wait for all the promises to resolve to get the value back, for those use cases you need to use `seria.stringifyToStream` and `seria.parseStream`.
+But when you are communicating between a server and client maybe you don't want your client to wait for all the promises to resolve to get the value back, for those use cases you need to use `seria.stringifyToStream` and `seria.parseFromStream`.
 
 ## stringifyToStream
 
@@ -46,15 +46,15 @@ const hero = {
 const stream = stringifyToStream(hero);
 ```
 
-The returting stream will stream the values, first the values `name`, `quirk` and `age` and after 1000ms the value `heroName`, to retrieve the original value back you need to use `seria.parseStream`.
+The returting stream will stream the values, first the values `name`, `quirk` and `age` and after 1000ms the value `heroName`, to retrieve the original value back you need to use `seria.parseFromStream`.
 
-## parseStream
+## parseFromStream
 
-`seria.parseStream` as the name suggest takes a stream and deserializes it to a single value.
+`seria.parseFromStream` as the name suggest takes a stream and deserializes it to a single value.
 
 ```ts
-import { parseStream } from "seria";
+import { parseFromStream } from "seria";
 
 const stream = getStream();
-const value = await parseStream(stream);
+const value = await parseFromStream(stream);
 ```

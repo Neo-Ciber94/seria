@@ -51,7 +51,7 @@ Seria provides stream-based serialization and deserialization:
 import * as seria from "seria";
 
 const stream = seria.stringifyToStream(value);
-const result = await seria.parseStream(stream);
+const result = await seria.parseFromStream(stream);
 ```
 
 If you serialize a value that contains any `Promise` you need to serialize using a stream or use `seria.stringifyAsync` which resolve all the promises.

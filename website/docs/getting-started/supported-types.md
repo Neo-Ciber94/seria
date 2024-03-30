@@ -6,7 +6,6 @@ sidebar_position: 3
 
 Types supported by `seria` in comparison with the standard `JSON` object.
 
-
 | Data Type         | seria.stringify/parse | JSON.stringify/parse |
 | ----------------- | --------------------- | -------------------- |
 | string            | ✅                    | ✅                   |
@@ -33,8 +32,9 @@ Types supported by `seria` in comparison with the standard `JSON` object.
 | BigInt64Array     | ✅                    | ❌                   |
 | BigUint64Array    | ✅                    | ❌                   |
 | DataView          | ✅                    | ❌                   |
+| File\*            | ✅                    | ❌                   |
 | FormData\*        | ✅                    | ❌                   |
 
-:::tip[FormData] 
-`FormData` is supported using the `seria/form-data` module.
+:::tip[File and FormData]
+`File` and `FormData` are only supported using the `seria/form-data` module.
 :::

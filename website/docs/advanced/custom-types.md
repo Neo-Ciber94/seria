@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Custom Types
 
-Similar to the global `JSON` seria allow to pass a `replacer` and `reviver` function.
+Similar to the global `JSON` seria allow to pass a `replacer` and `reviver` function but the behaviour in our case is different.
 
 When using a `stringify` function the `replacer` function is called for each value,
 the replacer take the value to stringify and return a `string` which represents the serialized value or `undefined` to ignore the value.
@@ -21,6 +21,10 @@ For URL we check if the value is an `URL` and then return a value in the format:
 ```bash
 $<tag><data>
 ```
+
+:::tip[Tags]
+[Checkout all the existing tags](https://github.com/Neo-Ciber94/seria/blob/main/packages/seria/src/tag.ts)
+:::
 
 This is the format `seria` use to represents any non-serializable value like `Date` and the **tag** is used to look up the value.
 
@@ -51,7 +55,6 @@ const value: any = parse(json, (val) => {
 });
 ```
 
-
 ### Serializing `RegExp`
 
 For RegExp we check if the value is an `RegExp` and then return a value in the format:
@@ -81,10 +84,10 @@ And for parsing because the `string` value.
 ```ts
 const value: any = parse(json, (val) => {
   if (typeof val === "string" && val.startsWith("$2")) {
-      const parts = val.slice(2); // remove the tag $2
-      const body = parts.slice(1, parts.lastIndexOf("/"));
-      const flags = parts.slice(parts.lastIndexOf("/") + 1);
-      return new RegExp(body, flags);
+    const parts = val.slice(2); // remove the tag $2
+    const body = parts.slice(1, parts.lastIndexOf("/"));
+    const flags = parts.slice(parts.lastIndexOf("/") + 1);
+    return new RegExp(body, flags);
   }
 
   return undefined;
