@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import { stringify, stringifyToStream, stringifyAsync } from "./stringify";
 import { parse, parseFromStream, internal_parseFromStream } from "./parse";
 import { type TrackingAsyncIterable } from "../trackingAsyncIterable";
+import { delay } from "../utils";
 
 describe("Parse value", () => {
   test("Parse string", () => {
@@ -573,7 +574,21 @@ describe("Parse async iterator", () => {
     expect((await iter.next()).value).toStrictEqual({ senpai: "Touko Nanami" });
     expect((await iter.next()).done).toBeTruthy();
   });
-});
 
-const delay = (ms: number) =>
-  new Promise<void>((resolve) => setTimeout(resolve, ms));
+  // test("Should parse object with async iterators", async () => {
+  //   async function* range(from: number, to: number) {
+  //     for (let i = from; i <= to; i++) {
+  //       yield i;
+  //     }
+  //   }
+
+  //   const obj = {
+  //     zeroToFive: range(0, 5),
+  //     OneToThree: range(1, 3),
+  //     FiveToNine: range(5, 9),
+  //   };
+
+  //   const json = await stringifyAsync(obj);
+  //   const value = parse(json) as typeof obj;
+  // });
+});

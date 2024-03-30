@@ -2,6 +2,7 @@
 import { describe, expect, test } from "vitest";
 import { encode } from ".";
 import { decode } from ".";
+import { delay } from "../utils";
 
 describe("Decode value", () => {
   test("Decode string", async () => {
@@ -468,6 +469,3 @@ describe("Decode async iterator", async () => {
     expect((await value.next()).done).toBeTruthy();
   });
 });
-
-const delay = (ms: number) =>
-  new Promise<void>((resolve) => setTimeout(resolve, ms));
