@@ -1,4 +1,4 @@
-# Seria 
+# Seria
 
 Seria is a serialization and deserialization library that goes beyond the conventional capabilities of JSON. It provides seamless handling for various data types, including those that JSON cannot handle directly.
 
@@ -19,7 +19,6 @@ yarn add seria
 ```bash
 pnpm add seria
 ```
-
 
 ## Usage
 
@@ -58,28 +57,35 @@ If you serialize a value that contains any `Promise` you need to serialize using
 
 ## Supported Data Types
 
-Seria supports various data types, including:
+Types supported by `seria` in comparison with the standard `JSON` object.
 
-- string/number/boolean/null
-- undefined
-- Date
-- BigInt
-- Promise
-- Symbol
-- Set
-- Map
-- ArrayBuffer
-- Int8Array
-- Uint8Array
-- Uint8ClampedArray
-- Int16Array
-- Uint16Array
-- Int32Array
-- Uint32Array
-- Float32Array
-- Float64Array
-- BigInt64Array
-- BigUint64Array
-- DataView
+| Data Type         | seria.stringify/parse | JSON.stringify/parse |
+| ----------------- | --------------------- | -------------------- |
+| string            | ✅                    | ✅                   |
+| number            | ✅                    | ✅                   |
+| boolean           | ✅                    | ✅                   |
+| null              | ✅                    | ✅                   |
+| undefined         | ✅                    | ❌                   |
+| Date              | ✅                    | ❌                   |
+| BigInt            | ✅                    | ❌                   |
+| Promise           | ✅                    | ❌                   |
+| Symbol            | ✅                    | ❌                   |
+| Set               | ✅                    | ❌                   |
+| Map               | ✅                    | ❌                   |
+| ArrayBuffer       | ✅                    | ❌                   |
+| Int8Array         | ✅                    | ❌                   |
+| Uint8Array        | ✅                    | ❌                   |
+| Uint8ClampedArray | ✅                    | ❌                   |
+| Int16Array        | ✅                    | ❌                   |
+| Uint16Array       | ✅                    | ❌                   |
+| Int32Array        | ✅                    | ❌                   |
+| Uint32Array       | ✅                    | ❌                   |
+| Float32Array      | ✅                    | ❌                   |
+| Float64Array      | ✅                    | ❌                   |
+| BigInt64Array     | ✅                    | ❌                   |
+| BigUint64Array    | ✅                    | ❌                   |
+| DataView          | ✅                    | ❌                   |
+| File\*            | ✅                    | ❌                   |
+| FormData\*        | ✅                    | ❌                   |
 
-`FormData` is supported using the `seria/form-data`
+> `File` and `FormData` is supported on `seria/form-data`.
