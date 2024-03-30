@@ -1,5 +1,5 @@
 import { themes as prismThemes } from "prism-react-renderer";
-import type { Config } from "@docusaurus/types";
+import type { Config, Plugin } from "@docusaurus/types";
 import type * as Preset from "@docusaurus/preset-classic";
 
 const config: Config = {
@@ -31,7 +31,7 @@ const config: Config = {
   },
 
   plugins: [
-    async function tailwindCssPlugin() {
+    async function tailwindCssPlugin(): Promise<Plugin> {
       return {
         name: "docusaurus-tailwindcss",
         configurePostCss(postcssOptions) {
