@@ -1,20 +1,29 @@
-# Seria
+<h1 align="center">seria</h1>
 
-[![CI][ci-badge]][ci-link] [![npm version][npm-badge]][npm-link]
+<div align="center">
+  <img src="https://raw.githubusercontent.com/Neo-Ciber94/seria/main/website/static/img/logo.png" alt="seria logo" width="128" height="128">
+<p align="center">
+  <a href="https://neo-ciber94.github.io/seria/">Documentation</a>
+</p>
+</div>
 
-[ci-badge]: https://github.com/Neo-Ciber94/seria/actions/workflows/ci.yml/badge.svg
-[ci-link]: https://github.com/Neo-Ciber94/seria/actions/workflows/ci.yml
-[npm-badge]: https://badge.fury.io/js/seria.svg
-[npm-link]: https://badge.fury.io/js/seria
+<p align="center">
+  <a href="https://pkg-size.dev/seria">
+  <img src="https://pkg-size.dev/badge/bundle/10736" title="Bundle size for seria">
+  </a>
+
+  <a href="https://github.com/Neo-Ciber94/seria/actions/workflows/ci.yml">
+  <img src="https://github.com/Neo-Ciber94/seria/actions/workflows/ci.yml/badge.svg" alt="npm">
+  </a>
+
+  <a href="https://www.npmjs.com/package/seria">
+  <img src="https://badge.fury.io/js/seria.svg" alt="CI">
+  </a>
+</p>
 
 Seria is a serialization and deserialization library that goes beyond the conventional capabilities of JSON. It provides seamless handling for various data types, including those that JSON cannot handle directly.
 
 > This library is inspired on the new serialization capabilities `react` provides for server actions.
-
-<div align="center">
-  <img src="https://raw.githubusercontent.com/Neo-Ciber94/seria/main/website/static/img/logo.png" alt="seria logo" width="64" height="64">
-  <a href="https://neo-ciber94.github.io/seria/"><h1>seria - docs</h1></a>
-</div>
 
 ## Installation
 

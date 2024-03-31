@@ -10,6 +10,7 @@
   "main": "dist/index.cjs",
   "module": "dist/index.js",
   "license": "MIT",
+  "readme": "../../readme.md",
   "scripts": {
     "build": "tsup",
     "test": "vitest --run",
