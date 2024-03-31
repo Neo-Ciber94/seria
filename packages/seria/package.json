@@ -10,7 +10,6 @@
   "main": "dist/index.cjs",
   "module": "dist/index.js",
   "license": "MIT",
-  "readme": "../../readme.md",
   "scripts": {
     "build": "tsup",
     "test": "vitest --run",
@@ -18,6 +17,7 @@
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "pnpm run build"
   },
+  "homepage": "https://neo-ciber94.github.io/seria",
   "repository": {
     "type": "git",
     "url": "https://github.com/Neo-Ciber94/seria"
