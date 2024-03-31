@@ -8,17 +8,9 @@
 </div>
 
 <p align="center">
-  <a href="https://pkg-size.dev/seria">
-  <img src="https://pkg-size.dev/badge/bundle/10736" title="Bundle size for seria">
-  </a>
-
-  <a href="https://github.com/Neo-Ciber94/seria/actions/workflows/ci.yml">
-  <img src="https://github.com/Neo-Ciber94/seria/actions/workflows/ci.yml/badge.svg" alt="npm">
-  </a>
-
-  <a href="https://www.npmjs.com/package/seria">
-  <img src="https://badge.fury.io/js/seria.svg" alt="CI">
-  </a>
+  <a href="https://pkg-size.dev/seria"><img src="https://pkg-size.dev/badge/bundle/10736" title="Bundle size for seria"></a>
+  <a href="https://github.com/Neo-Ciber94/seria/actions/workflows/ci.yml"><img src="https://github.com/Neo-Ciber94/seria/actions/workflows/ci.yml/badge.svg" alt="npm"></a>
+  <a href="https://www.npmjs.com/package/seria"><img src="https://badge.fury.io/js/seria.svg" alt="CI"></a>
 </p>
 
 Seria is a serialization and deserialization library that goes beyond the conventional capabilities of JSON. It provides seamless handling for various data types, including those that JSON cannot handle directly.
