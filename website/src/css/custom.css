@@ -33,9 +33,20 @@
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
 
-/* 
-Minifier fail to handle this:
+body::-webkit-scrollbar {
+  width: 1em;
+}
 
+body::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+}
+
+body::-webkit-scrollbar-thumb {
+  background-color: #4f46e5;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+}
+
+/* 
 .prism-code-editor {
   @apply w-full xl:w-[600px] xl:min-h-[300px] text-xs sm:text-sm pt-2;
 } */

@@ -1,3 +1,5 @@
+import "prism-code-editor/prism/languages/javascript";
+import "prism-code-editor/layout.css";
 import { useState, useRef, useEffect, Fragment } from "react";
 import { createEditor, type PrismEditor } from "prism-code-editor";
 import * as seria from "seria";
@@ -5,8 +7,6 @@ import { Listbox, Transition } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
 import { useTheme } from "../hooks/useTheme";
 import { loadTheme } from "prism-code-editor/themes";
-import "prism-code-editor/prism/languages/javascript";
-import "prism-code-editor/layout.css";
 import { SiJavascript } from "react-icons/si";
 import { VscJson } from "react-icons/vsc";
 import { CgSpinner } from "react-icons/cg";
