@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import { stringify, stringifyToStream, stringifyAsync } from "./stringify";
 import { parse, parseFromStream, internal_parseFromStream } from "./parse";
 import { type TrackingAsyncIterable } from "../trackingAsyncIterable";
@@ -594,5 +594,41 @@ describe("Parse async iterator", () => {
     await expect(value.zeroToFive).toMatchSequence([0, 1, 2, 3, 4, 5]);
     await expect(value.oneToThree).toMatchSequence([1, 2, 3]);
     await expect(value.fiveToNine).toMatchSequence([5, 6, 7, 8, 9]);
+  });
+});
+
+describe("Streaming using timers", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  test("Should parse async iterators from stream with timers", async () => {
+    async function* range(to: number) {
+      for (let i = 0; i <= to; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        yield i;
+      }
+    }
+
+    const stream = stringifyToStream(range(3));
+    const iter = (await parseFromStream(
+      stream
+    )) as AsyncIterableIterator<number>;
+
+    vi.advanceTimersByTime(1000);
+    expect((await iter.next()).value).toStrictEqual(0);
+
+    vi.advanceTimersByTime(1000);
+    expect((await iter.next()).value).toStrictEqual(1);
+
+    vi.advanceTimersByTime(1000);
+    expect((await iter.next()).value).toStrictEqual(2);
+
+    vi.advanceTimersByTime(1000);
+    expect((await iter.next()).value).toStrictEqual(3);
+
+    expect((await iter.next()).done).toBeTruthy();
+
+    vi.clearAllTimers();
   });
 });

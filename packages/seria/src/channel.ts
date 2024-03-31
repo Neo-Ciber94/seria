@@ -6,8 +6,8 @@ export type Sender<T> = {
 
 export type Receiver<T> = {
   id: number;
-  recv: () => Promise<T> | undefined;
-  next: () => Promise<IteratorResult<T>>;
+  recv: () => Promise<T | undefined>;
+  next: () => Promise<IteratorResult<T | undefined>>;
   isClosed: () => boolean;
   [Symbol.asyncIterator]: () => AsyncIterator<T>;
 };
@@ -16,7 +16,7 @@ type ChannelOptions = {
   id: number;
 };
 
-type ResolvePromise<T> = (value: T | Promise<T>) => void;
+type ResolvePromise<T> = (value: T | Promise<T> | undefined) => void;
 
 /**
  * Create a multi-producer and single consumer channel.
@@ -44,17 +44,18 @@ export function createChannel<T>(options: ChannelOptions) {
     }
   }
 
-  function recv() {
+  async function recv() {
     if (closed && queue.length === 0) {
       return undefined;
     }
 
     const promise = queue.shift();
+
     if (promise) {
       return promise;
     }
 
-    return new Promise<T>((resolve) => {
+    return new Promise<T | undefined>((resolve) => {
       resolveQueue.push(resolve);
     });
   }
@@ -62,23 +63,18 @@ export function createChannel<T>(options: ChannelOptions) {
   async function* asyncIterator() {
     while (true) {
       const item = await recv();
+
       if (item === undefined) {
-        return;
+        break;
       }
 
       yield item;
     }
   }
 
-  async function next(): Promise<IteratorResult<T>> {
-    const promise = recv();
-
-    if (!promise) {
-      return { done: true, value: undefined };
-    }
-
-    const value = await promise;
-    return { value };
+  async function next(): Promise<IteratorResult<T | undefined>> {
+    const value = await recv();
+    return { done: closed, value };
   }
 
   const sender: Sender<T> = {
@@ -86,6 +82,12 @@ export function createChannel<T>(options: ChannelOptions) {
     send,
     close: () => {
       closed = true;
+
+      // resolve each pending with undefined
+      const pendingResolve = resolveQueue.splice(0, resolveQueue.length);
+      for (const resolve of pendingResolve) {
+        resolve(undefined);
+      }
     },
   };
 

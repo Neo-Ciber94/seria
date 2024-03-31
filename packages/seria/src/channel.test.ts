@@ -28,7 +28,7 @@ describe("Channel", () => {
     await expect(receiver.recv()).resolves.toStrictEqual(2);
     await expect(receiver.recv()).resolves.toStrictEqual(3);
     await expect(receiver.recv()).resolves.toStrictEqual(4);
-    expect(receiver.recv()).toBeUndefined();
+    await expect(receiver.recv()).resolves.toBeUndefined();
   });
 
   test("Should hold until value is received", async () => {
@@ -69,7 +69,7 @@ describe("Channel", () => {
       expect(item).toStrictEqual(idx++);
     }
 
-    expect(receiver.recv()).toBeUndefined();
+    await expect(receiver.recv()).resolves.toBeUndefined();
   });
 
   test("Should iterate using next()", async () => {
@@ -86,5 +86,25 @@ describe("Channel", () => {
     expect((await receiver.next()).value).toStrictEqual(2);
     expect((await receiver.next()).value).toStrictEqual(3);
     expect((await receiver.next()).done).toBeTruthy();
+  });
+
+  test("Should get undefined after closed", async () => {
+    const [sender, receiver] = createChannel<number>({ id: 1 });
+
+    sender.send(1);
+    sender.close();
+
+    expect(await receiver.recv()).toStrictEqual(1);
+    expect(await receiver.recv()).toBeUndefined();
+    expect(await receiver.recv()).toBeUndefined();
+  });
+
+  test("Should resolve to undefined on close", async () => {
+    const [sender, receiver] = createChannel<number>({ id: 1 });
+
+    const p = receiver.recv();
+    sender.close();
+
+    await expect(p).resolves.toBeUndefined();
   });
 });
