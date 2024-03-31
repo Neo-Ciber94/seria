@@ -431,11 +431,17 @@ function serializeAsyncIterable(
 ) {
   const id = context.nextId();
 
+  // We send all the async iterable emited and any nested async iterable values.
+  // Flattening the nested iterable would make no sense because we are not returning the exact
+  // value was originally stringified. So we could:
+  // 1. Throw an error and don't stringify nested async iterables
+  // 2. Attempt to stringify nested async iterables which could lead to infinite loops.
   async function* resolveAsyncIterable(
     iter: AsyncIterable<unknown>
   ): AsyncGenerator<unknown> {
     for await (const item of iter) {
       if (isAsyncIterable(item)) {
+        // console.warn("Avoid returning nested async iterables, prefer using `yield*` instead")
         yield* resolveAsyncIterable(item);
       } else {
         yield item;
