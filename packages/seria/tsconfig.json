@@ -23,9 +23,11 @@
     },
     "include": [
         "src",
+        "scripts",
         "tests",
         "tsup.config.ts",
         "setupTests.ts",
-        "vitest.config.mts"
+        "vitest.config.mts",
+        "copyNpmFiles.ts"
     ]
 }

@@ -15,7 +15,8 @@
     "test": "vitest --run",
     "lint": "eslint ./src/**/*.{js,jsx,ts,tsx}",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "pnpm run build"
+    "copy:npm_files": "npx tsx copyNpmFiles.ts",
+    "prepublishOnly": "pnpm run copy:npm_files && pnpm run build"
   },
   "homepage": "https://neo-ciber94.github.io/seria",
   "repository": {
@@ -31,7 +32,7 @@
   ],
   "devDependencies": {
     "@hono/node-server": "^1.8.2",
-    "@types/node": "^20.10.5",
+    "@types/node": "^20.11.30",
     "@typescript-eslint/eslint-plugin": "^7.3.1",
     "@typescript-eslint/parser": "^7.3.1",
     "@vitest/ui": "^1.4.0",
@@ -43,7 +44,9 @@
     "eslint-plugin-react": "^7.34.1",
     "hono": "^4.1.3",
     "jsdom": "^24.0.0",
+    "ncp": "^2.0.0",
     "tsup": "^8.0.2",
+    "tsx": "^4.7.1",
     "typescript": "^5.4.2",
     "undici": "^6.10.1",
     "vitest": "^1.2.2"
