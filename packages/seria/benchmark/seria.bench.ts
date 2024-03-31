@@ -1,5 +1,6 @@
 import { describe, bench } from "vitest";
 import * as seria from "../src";
+import * as seriaFormData from "../src/form-data";
 import * as superjson from "superjson";
 import * as devalue from "devalue";
 
@@ -51,6 +52,20 @@ describe("Benchmark parse", () => {
 
   bench("devalue.parse", () => {
     const _value = devalue.parse(devalueJson);
+  });
+});
+
+describe("Benchmark FormData encode", async () => {
+  bench("seriaFormData.encode", () => {
+    const _value = seriaFormData.encode(obj, seriaReplacer);
+  });
+});
+
+describe("Benchmark FormData decode", async () => {
+  const formData = seriaFormData.encode(obj, seriaReplacer);
+
+  bench("seriaFormData.decode", () => {
+    const _value = seriaFormData.decode(formData, seriaReviver);
   });
 });
 
