@@ -114,8 +114,8 @@ importers:
         specifier: ^15.5.0
         version: 15.5.0(react@18.2.0)
       seria:
-        specifier: ^
-        version: 0.1.7
+        specifier: ^0.1.8
+        version: 0.1.8
       tailwindcss:
         specifier: ^3.4.1
         version: 3.4.1
@@ -9716,8 +9716,8 @@ packages:
     transitivePeerDependencies:
       - supports-color
 
-  /seria@0.1.7:
-    resolution: {integrity: sha512-erUnVzoPvD/ByPPZTBPCStgmZ5mECJcv8H9J50Rcm0ZtDm8t3M43zjFdzniSO4LDqYEKfu6Xd3jSBqTJdylHXQ==}
+  /seria@0.1.8:
+    resolution: {integrity: sha512-Gl1MDZj/n/M/QxeE+158eNQ7yqCZQnWQMUVVEwskiRg0WjWyZTNy4JzdMRLWgjAOfA59N/FN6gxu38aKS8A4Vg==}
     dev: false
 
   /serialize-javascript@6.0.2:
