@@ -15,6 +15,9 @@ export type Receiver<T> = {
 type ChannelOptions = {
   id: number;
 };
+
+type ResolvePromise<T> = (value: T | Promise<T>) => void;
+
 /**
  * Create a multi-producer and single consumer channel.
  * @param options Options used to create the channel.
@@ -22,8 +25,8 @@ type ChannelOptions = {
  */
 export function createChannel<T>(options: ChannelOptions) {
   const { id } = options;
-  const promiseQueue: Promise<T>[] = [];
-  let pendingResolve: ((value: T | Promise<T>) => void) | undefined = undefined;
+  const queue: Promise<T>[] = [];
+  const resolveQueue: ResolvePromise<T>[] = [];
   let closed = false;
 
   function send(value: T | Promise<T>) {
@@ -32,28 +35,27 @@ export function createChannel<T>(options: ChannelOptions) {
     }
 
     const promise = value instanceof Promise ? value : Promise.resolve(value);
+    const resolve = resolveQueue.shift();
 
-    if (pendingResolve) {
-      pendingResolve(promise);
-      pendingResolve = undefined;
-      return;
+    if (resolve) {
+      resolve(promise);
+    } else {
+      queue.push(promise);
     }
-
-    promiseQueue.push(promise);
   }
 
   function recv() {
-    if (closed && promiseQueue.length === 0) {
+    if (closed && queue.length === 0) {
       return undefined;
     }
 
+    const promise = queue.shift();
+    if (promise) {
+      return promise;
+    }
+
     return new Promise<T>((resolve) => {
-      const promise = promiseQueue.shift();
-      if (promise) {
-        resolve(promise);
-      } else {
-        pendingResolve = resolve;
-      }
+      resolveQueue.push(resolve);
     });
   }
 
