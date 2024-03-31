@@ -25,9 +25,10 @@
         "src",
         "scripts",
         "tests",
+        "benchmark",
         "tsup.config.ts",
         "setupTests.ts",
         "vitest.config.mts",
-        "copyNpmFiles.ts"
+        "copyNpmFiles.ts",
     ]
 }
