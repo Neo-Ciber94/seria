@@ -18,7 +18,7 @@ type SerializeContext = {
   pendingIteratorsMap: Map<number, TrackingAsyncIterable<any>>;
   space?: string | number;
   nextId: () => number;
-  encodeValue: (input: any) => unknown;
+  serialize: (input: any) => unknown;
   checkWrittenValues: () => void;
 };
 
@@ -40,7 +40,7 @@ export function stringify(
   replacer?: Replacer | null,
   space?: number | string
 ) {
-  const { output, pendingPromises, pendingIterators } = internal_serialize(
+  const { output, pendingPromises, pendingIterators } = internal_stringify(
     value,
     {
       replacer,
@@ -71,7 +71,7 @@ export async function stringifyAsync(
   replacer?: Replacer | null,
   space?: number | string
 ) {
-  const result = internal_serialize(value, {
+  const result = internal_stringify(value, {
     replacer,
     space,
   });
@@ -102,7 +102,7 @@ export function stringifyToStream(
   replacer?: Replacer | null,
   space?: number | string
 ) {
-  const result = internal_serialize(value, {
+  const result = internal_stringify(value, {
     replacer,
     space,
   });
@@ -122,7 +122,7 @@ export function stringifyToStream(
 
           // `stringifyAsync` with an initial `id`
           // We use the initial to set the promise on the correct slot
-          const serializedPromise = internal_serialize(resolved, {
+          const serializedPromise = internal_stringify(resolved, {
             replacer,
             initialID: id,
           });
@@ -174,7 +174,7 @@ export function stringifyToStream(
 /**
  * @internal
  */
-export function internal_serialize(
+export function internal_stringify(
   value: unknown,
   opts: {
     replacer?: Replacer | null;
@@ -208,11 +208,11 @@ export function internal_serialize(
     pendingIteratorsMap,
     space,
     nextId,
-    encodeValue,
+    serialize,
     checkWrittenValues,
   };
 
-  function encodeValue(input: any) {
+  function serialize(input: any) {
     // Custom serializer
     if (replacer) {
       const serialized = replacer(input, context);
@@ -297,7 +297,7 @@ export function internal_serialize(
   }
 
   // The base value contains all the references ids
-  const baseValue = encodeValue(value);
+  const baseValue = serialize(value);
   output[0] = baseValue;
 
   checkWrittenValues();
@@ -347,7 +347,7 @@ function serializeArray(input: Array<any>, context: SerializeContext) {
   const items: unknown[] = [];
 
   for (const val of input) {
-    items.push(context.encodeValue(val));
+    items.push(context.serialize(val));
   }
 
   return items;
@@ -358,7 +358,7 @@ function serializeSet(input: Set<any>, context: SerializeContext) {
   const items: unknown[] = [];
 
   for (const val of input) {
-    items.push(context.encodeValue(val));
+    items.push(context.serialize(val));
   }
 
   const id = context.nextId();
@@ -371,8 +371,8 @@ function serializeMap(input: Map<any, any>, context: SerializeContext) {
   const items: [unknown, unknown][] = [];
 
   for (const [k, v] of input) {
-    const encodedKey = context.encodeValue(k);
-    const encodedValue = context.encodeValue(v);
+    const encodedKey = context.serialize(k);
+    const encodedValue = context.serialize(v);
     items.push([encodedKey, encodedValue]);
   }
 
@@ -388,7 +388,11 @@ function serializePlainObject(
   const obj: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(input)) {
-    obj[key] = context.encodeValue(value);
+    if (typeof key === 'symbol') {
+      throw new Error("Cannot serialize an object with a 'symbol' as key")
+    }
+
+    obj[key] = context.serialize(value);
   }
 
   return obj;
@@ -399,7 +403,7 @@ function serializePromise(input: Promise<any>, context: SerializeContext) {
 
   // We create a new promise that resolve to the serialized value
   const resolvingPromise = input.then((value) => {
-    const ret = context.encodeValue(value);
+    const ret = context.serialize(value);
     context.writtenValues.set(id, ret);
     context.checkWrittenValues(); // Update the values with the new one
     return value;
@@ -451,7 +455,7 @@ function serializeAsyncIterable(
 
   const generator = (async function* () {
     for await (const item of resolveAsyncIterable(input)) {
-      const ret = context.encodeValue(item);
+      const ret = context.serialize(item);
 
       // Push the new generated value
       const items = [...((context.output[id] as any[]) || []), ret];

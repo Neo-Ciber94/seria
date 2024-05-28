@@ -25,7 +25,7 @@ export type Reviver = (value: any) => any | undefined;
  * @returns The parsed value.
  */
 export function parse(value: string, reviver?: Reviver): unknown {
-  const result = internal_parseValue(value, { reviver });
+  const result = internal_parse(value, { reviver });
   return result.data;
 }
 
@@ -87,7 +87,7 @@ export function internal_parseFromStream(
   return new ReadableStream<unknown>({
     async start(controller) {
       async function processChunk(jsonChunk: string) {
-        const { data, pendingPromises, pendingChannels } = internal_parseValue(
+        const { data, pendingPromises, pendingChannels } = internal_parse(
           jsonChunk,
           {
             deferPromises: true,
@@ -177,7 +177,7 @@ type Options = {
   reviver?: Reviver;
 };
 
-function internal_parseValue(value: string, opts?: Options) {
+function internal_parse(value: string, opts?: Options) {
   const { deferPromises = false, reviver } = opts || {};
   const pendingPromises = new Map<number, DeferredPromise<unknown>>();
   const pendingChannels = new Map<number, Sender<unknown>>();

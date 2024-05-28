@@ -3,7 +3,7 @@
 import { Tag, isTypedArrayTag } from "../tag";
 import {
   type Replacer,
-  internal_serialize,
+  internal_stringify,
   serializeTagValue,
 } from "../json/stringify";
 import { type Reviver } from "../json/parse";
@@ -87,7 +87,7 @@ function internal_encodeFormData(
   }
 ) {
   const { formData, replacer: _replacer } = opts;
-  return internal_serialize(value, {
+  return internal_stringify(value, {
     replacer: (input, ctx) => {
       if (_replacer) {
         const ret = _replacer(input, ctx);
