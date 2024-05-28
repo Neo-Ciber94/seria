@@ -318,13 +318,8 @@ export function internal_stringify(
   };
 }
 
-function escapeString(s: string) {
-  return s;
-}
-
 function serializeString(input: string) {
-  const escaped = escapeString(input);
-  return `$$${escaped}`;
+  return `$$${input}`;
 }
 
 function serializeNumber(input: number) {

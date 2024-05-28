@@ -133,7 +133,7 @@ describe("Parse object", async () => {
     await expect(decoded.array).resolves.toStrictEqual([1, 2, 3]);
   });
 
-  test("Parse array of promises", async () => {});
+  test("Parse array of promises", async () => { });
 });
 
 type IndexableBuffer<T> = {
