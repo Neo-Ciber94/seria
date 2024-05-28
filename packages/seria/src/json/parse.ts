@@ -191,7 +191,7 @@ function internal_parse(value: string, opts?: Options) {
     }
   })();
 
-  const deserizalizeValue = (input: any): unknown => {
+  const deserialize = (input: any): unknown => {
     if (reviver) {
       const ret = reviver(input);
       if (ret !== undefined) {
@@ -245,7 +245,7 @@ function internal_parse(value: string, opts?: Options) {
                 if (values) {
                   if (Array.isArray(values)) {
                     for (const item of values) {
-                      set.add(deserizalizeValue(item));
+                      set.add(deserialize(item));
                     }
                   }
                 }
@@ -265,8 +265,8 @@ function internal_parse(value: string, opts?: Options) {
                 if (values) {
                   if (Array.isArray(values)) {
                     for (const [key, value] of values) {
-                      const decodedKey = deserizalizeValue(key);
-                      const decodedValue = deserizalizeValue(value);
+                      const decodedKey = deserialize(key);
+                      const decodedValue = deserialize(value);
                       map.set(decodedKey, decodedValue);
                     }
                   }
@@ -293,7 +293,7 @@ function internal_parse(value: string, opts?: Options) {
               }
 
               try {
-                const resolvedValue = deserizalizeValue(rawValue);
+                const resolvedValue = deserialize(rawValue);
                 return trackPromise(id, Promise.resolve(resolvedValue));
               } catch {
                 throw new Error("Unable to resolve promise value");
@@ -319,7 +319,7 @@ function internal_parse(value: string, opts?: Options) {
 
                 const generator = (async function* () {
                   for (const item of values) {
-                    const resolvedValue = deserizalizeValue(item);
+                    const resolvedValue = deserialize(item);
                     yield resolvedValue;
                   }
                 })();
@@ -355,14 +355,14 @@ function internal_parse(value: string, opts?: Options) {
         } else if (Array.isArray(input)) {
           const arr: any[] = [];
           for (const item of input) {
-            arr.push(deserizalizeValue(item));
+            arr.push(deserialize(item));
           }
           return arr;
         } else if (isPlainObject(input)) {
           const obj: Record<string, unknown> = {};
 
           for (const [key, value] of Object.entries(input)) {
-            obj[key] = deserizalizeValue(value);
+            obj[key] = deserialize(value);
           }
 
           return obj;
@@ -375,7 +375,7 @@ function internal_parse(value: string, opts?: Options) {
     }
   };
 
-  const data = deserizalizeValue(base);
+  const data = deserialize(base);
   return { data, pendingPromises, pendingChannels };
 }
 
