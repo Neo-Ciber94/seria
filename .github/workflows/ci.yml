@@ -49,7 +49,7 @@ jobs:
 
       - name: Build Docs
         if: steps.changes.outputs.website == 'true'
-        run: cd website && pnpm install && pnpm run build
+        run: pnpm run build && cd website && pnpm install && pnpm run build
 
       - name: Deploy Docs
         uses: peaceiris/actions-gh-pages@v3
