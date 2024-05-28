@@ -181,6 +181,10 @@ function internal_parse(value: string, opts?: Options) {
   const { deferPromises = false, reviver } = opts || {};
   const pendingPromises = new Map<number, DeferredPromise<unknown>>();
   const pendingChannels = new Map<number, Sender<unknown>>();
+  const existing = new Map<number, unknown>();
+
+  let id = 0;
+  const nextId = () => id++;
 
   const { references, base } = (function () {
     try {
@@ -278,6 +282,16 @@ function internal_parse(value: string, opts?: Options) {
 
               return map;
             }
+            case maybeTag[0] === Tag.Reference: {
+              const id = parseTagId(input.slice(2));
+              const ref = existing.get(id);
+
+              if (ref === undefined) {
+                throw new Error("Reference not found")
+              }
+
+              return ref;
+            }
             case maybeTag[0] === Tag.Promise: {
               const id = parseTagId(input.slice(2));
               const rawValue = references[id];
@@ -343,7 +357,7 @@ function internal_parse(value: string, opts?: Options) {
               });
             }
             default:
-              throw new Error(`Unknown reference value: ${input}`);
+              throw new Error(`Unknown value: ${input}`);
           }
         } else {
           throw new Error(`Invalid reference value: ${input}`);
@@ -360,6 +374,7 @@ function internal_parse(value: string, opts?: Options) {
           return arr;
         } else if (isPlainObject(input)) {
           const obj: Record<string, unknown> = {};
+          existing.set(nextId(), obj);
 
           for (const [key, value] of Object.entries(input)) {
             obj[key] = deserialize(value);

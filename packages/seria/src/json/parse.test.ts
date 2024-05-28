@@ -84,6 +84,29 @@ describe("Parse value", () => {
     expect(decoded).toStrictEqual("hola");
   });
 
+  test("Parse circular object", () => {
+    const obj: any = { num: 12 };
+    obj.x = obj;
+
+    const encoded = stringify(obj);
+    const decoded = parse(encoded) as any;
+
+    expect(decoded.num).toStrictEqual(12);
+    expect(decoded.x).toBeTruthy();
+  });
+
+  test("Parse array with same reference", () => {
+    const obj: any = { text: 'hello' };
+    const arr = [obj, obj, obj]
+
+    const encoded = stringify(arr);
+    const decoded = parse(encoded) as any;
+
+    expect(decoded).toStrictEqual([{ text: 'hello' }, { text: 'hello' }, { text: 'hello' }]);
+    expect(decoded[0]).toBe(decoded[1])
+    expect(decoded[1]).toBe(decoded[2])
+  });
+
   test("Parse resolved Promise", async () => {
     const encoded = await stringifyAsync(Promise.resolve("adios amigos"));
     const decoded = parse(encoded);

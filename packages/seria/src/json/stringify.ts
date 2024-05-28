@@ -11,9 +11,11 @@ import {
   type TrackingAsyncIterable,
 } from "../trackingAsyncIterable";
 
+
 type SerializeContext = {
   output: unknown[];
   serializedValues: Map<number, unknown>;
+  referencesMap: Map<object, number>;
   pendingPromisesMap: Map<number, TrackingPromise<any>>;
   pendingIteratorsMap: Map<number, TrackingAsyncIterable<any>>;
   space?: string | number;
@@ -26,6 +28,8 @@ export type Replacer = (
   value: any,
   context: SerializeContext
 ) => string | undefined;
+
+
 
 /**
  * Converts a value to a json string.
@@ -184,6 +188,7 @@ export function internal_stringify(
 ) {
   const { replacer, space, initialID = 1 } = opts;
   const serializedValues = new Map<number, unknown>();
+  const referencesMap = new Map<object, number>();
   const pendingPromisesMap = new Map<number, TrackingPromise<any>>();
   const pendingIteratorsMap = new Map<number, TrackingAsyncIterable<any>>();
   const output: unknown[] = [];
@@ -193,6 +198,8 @@ export function internal_stringify(
   const nextId = () => {
     return id++;
   };
+
+  const peekId = () => id;
 
   // Update the references of the serialized values
   const checkSerialized = () => {
@@ -204,6 +211,7 @@ export function internal_stringify(
   const context: SerializeContext = {
     output,
     serializedValues,
+    referencesMap,
     pendingPromisesMap,
     pendingIteratorsMap,
     space,
@@ -239,6 +247,10 @@ export function internal_stringify(
         if (input === null) {
           return null;
         }
+        else if (referencesMap.has(input)) {
+          const id = referencesMap.get(input)!;
+          return serializeTagValue(Tag.Reference, id)
+        }
         else if (input instanceof String) {
           return serializeString(input.toString())
         }
@@ -251,6 +263,7 @@ export function internal_stringify(
         } else if (Array.isArray(input)) {
           return serializeArray(input, context);
         } else if (isPlainObject(input)) {
+          referencesMap.set(input, peekId() - 1)
           return serializePlainObject(input, context);
         } else if (input instanceof Promise) {
           return serializePromise(input, context);
@@ -489,7 +502,7 @@ function serializeAsyncIterable(
  * @internal
  */
 export function serializeTagValue(tag: Tag, value?: number | string) {
-  return value ? `$${tag}${value}` : `$${tag}`;
+  return value !== undefined ? `$${tag}${value}` : `$${tag}`;
 }
 
 function unsafe_writeOutput(tag: Tag, id: number, value: unknown) {
