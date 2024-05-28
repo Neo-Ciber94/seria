@@ -224,7 +224,7 @@ export function internal_stringify(
     // Default serializer
     switch (typeof input) {
       case "string":
-        return `$$${input}`;
+        return serializeString(input)
       case "boolean":
         return input;
       case "number":
@@ -238,7 +238,11 @@ export function internal_stringify(
       case "object": {
         if (input === null) {
           return null;
-        } else if (input instanceof Date) {
+        }
+        else if (input instanceof String) {
+          return serializeString(input.toString())
+        }
+        else if (input instanceof Date) {
           return serializeDate(input);
         } else if (input instanceof Map) {
           return serializeMap(input, context);
@@ -312,6 +316,15 @@ export function internal_stringify(
       return Array.from(pendingIteratorsMap.values());
     },
   };
+}
+
+function escapeString(s: string) {
+  return s;
+}
+
+function serializeString(input: string) {
+  const escaped = escapeString(input);
+  return `$$${escaped}`;
 }
 
 function serializeNumber(input: number) {
