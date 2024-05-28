@@ -20,11 +20,14 @@ export const enum Tag {
   NegativeZero = "-0",
   NaN_ = "NaN",
 
+  // Object reference
+  Reference = "R",
+
   // Others
   File = "k",
   AsyncIterator = "#",
 
-  // Buffers
+  // TypedArray
   ArrayBuffer = "A",
   Int8Array = "C",
   Uint8Array = "c",
