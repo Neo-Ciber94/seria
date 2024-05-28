@@ -96,7 +96,7 @@ describe("Parse value", () => {
   });
 
   test("Parse array with same reference", () => {
-    const obj: any = { text: 'hello' };
+    const obj = { text: 'hello' };
     const arr = [obj, obj, obj]
 
     const encoded = stringify(arr);
