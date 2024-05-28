@@ -70,24 +70,25 @@ If you serialize a value that contains any `Promise` you need to serialize using
 
 Types supported by `seria` in comparison with the standard `JSON` object.
 
-| Data Type     | seria.stringify/parse | JSON.stringify/parse |
-| ------------- | --------------------- | -------------------- |
-| string        | ✅                    | ✅                   |
-| number        | ✅                    | ✅                   |
-| boolean       | ✅                    | ✅                   |
-| null          | ✅                    | ✅                   |
-| undefined     | ✅                    | ❌                   |
-| Date          | ✅                    | ❌                   |
-| BigInt        | ✅                    | ❌                   |
-| Promise       | ✅                    | ❌                   |
-| Symbol        | ✅                    | ❌                   |
-| Set           | ✅                    | ❌                   |
-| Map           | ✅                    | ❌                   |
-| ArrayBuffer   | ✅                    | ❌                   |
-| TypedArrays\* | ✅                    | ❌                   |
-| DataView      | ✅                    | ❌                   |
-| File\*        | ✅                    | ❌                   |
-| FormData\*    | ✅                    | ❌                   |
+| Data Type      | seria.stringify/parse | JSON.stringify/parse |
+| -------------- | --------------------- | -------------------- |
+| string         | ✅                    | ✅                   |
+| number         | ✅                    | ✅                   |
+| boolean        | ✅                    | ✅                   |
+| null           | ✅                    | ✅                   |
+| undefined      | ✅                    | ❌                   |
+| Date           | ✅                    | ❌                   |
+| BigInt         | ✅                    | ❌                   |
+| Promise        | ✅                    | ❌                   |
+| AsyncGenerator | ✅                    | ❌                   |
+| Symbol         | ✅                    | ❌                   |
+| Set            | ✅                    | ❌                   |
+| Map            | ✅                    | ❌                   |
+| ArrayBuffer    | ✅                    | ❌                   |
+| TypedArrays\*  | ✅                    | ❌                   |
+| DataView       | ✅                    | ❌                   |
+| File\*         | ✅                    | ❌                   |
+| FormData\*     | ✅                    | ❌                   |
 
 > Typed Arrays https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Typed_arrays
 
