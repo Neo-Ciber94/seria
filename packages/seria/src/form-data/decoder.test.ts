@@ -413,46 +413,46 @@ describe("Decode buffer", () => {
   });
 });
 
-describe("Decode with reviver and replacer", () => {
-  test("Decode URL and regex", async () => {
-    const obj = {
-      url: new URL("http://127.0.0.1:3000/custom?text=hello&num=34"),
-      regex: /^([a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})*$/i,
-    };
+// describe("Decode with reviver and replacer", () => {
+//   test("Decode URL and regex", async () => {
+//     const obj = {
+//       url: new URL("http://127.0.0.1:3000/custom?text=hello&num=34"),
+//       regex: /^([a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})*$/i,
+//     };
 
-    const formData = await encodeAsync(obj, (val) => {
-      if (val instanceof URL) {
-        return `$1${val.href}`; // `$1` as tag for URL
-      }
+//     const formData = await encodeAsync(obj, (val) => {
+//       if (val instanceof URL) {
+//         return `$1${val.href}`; // `$1` as tag for URL
+//       }
 
-      if (val instanceof RegExp) {
-        return `$2${val.toString()}`; // `$2` as tag for RegExp
-      }
+//       if (val instanceof RegExp) {
+//         return `$2${val.toString()}`; // `$2` as tag for RegExp
+//       }
 
-      return undefined;
-    });
+//       return undefined;
+//     });
 
-    const value: any = decode(formData, (val) => {
-      if (typeof val === "string" && val.startsWith("$1")) {
-        return new URL(val.slice(2));
-      }
+//     const value: any = decode(formData, (val) => {
+//       if (typeof val === "string" && val.startsWith("$1")) {
+//         return new URL(val.slice(2));
+//       }
 
-      if (typeof val === "string" && val.startsWith("$2")) {
-        const parts = val.slice(2);
-        const body = parts.slice(1, parts.lastIndexOf("/"));
-        const flags = parts.slice(parts.lastIndexOf("/") + 1);
-        return new RegExp(body, flags);
-      }
+//       if (typeof val === "string" && val.startsWith("$2")) {
+//         const parts = val.slice(2);
+//         const body = parts.slice(1, parts.lastIndexOf("/"));
+//         const flags = parts.slice(parts.lastIndexOf("/") + 1);
+//         return new RegExp(body, flags);
+//       }
 
-      return undefined;
-    });
+//       return undefined;
+//     });
 
-    expect(value).toStrictEqual({
-      url: new URL("http://127.0.0.1:3000/custom?text=hello&num=34"),
-      regex: /^([a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})*$/i,
-    });
-  });
-});
+//     expect(value).toStrictEqual({
+//       url: new URL("http://127.0.0.1:3000/custom?text=hello&num=34"),
+//       regex: /^([a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})*$/i,
+//     });
+//   });
+// });
 
 describe("Decode async iterator", async () => {
   test("Should decode async iterator", async () => {

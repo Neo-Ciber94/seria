@@ -2,11 +2,11 @@
 
 import { Tag, isTypedArrayTag } from "../tag";
 import {
-  type Replacer,
-  internal_stringify,
+  type Replacers,
+  internal_serialize,
   serializeTagValue,
 } from "../json/stringify";
-import { type Reviver } from "../json/parse";
+import { type Revivers } from "../json/parse";
 import { isPlainObject } from "../utils";
 import { base64ToBuffer } from "../utils";
 import { SeriaError } from "../error";
@@ -21,13 +21,13 @@ import type { FormData as UndiciFormData } from "undici";
  * @returns The value encoded as `FormData`.
  * @throws If the value is or have any promise.
  */
-export function encode(value: unknown, replacer?: Replacer): FormData {
+export function encode(value: unknown, replacers?: Replacers): FormData {
   const formData = new FormData();
   const { output, pendingPromises, pendingIterators } = internal_encodeFormData(
     value,
     {
       formData,
-      replacer,
+      replacers,
     }
   );
 
@@ -49,17 +49,17 @@ export function encode(value: unknown, replacer?: Replacer): FormData {
 /**
  * Encodes a value into a `FormData`, resolving all it's promises if any.
  * @param value The value to encode.
- * @param replacer Converts a value to string.
+ * @param replacers Converts a custom value.
  * @returns The value encoded as `FormData`.
  */
 export async function encodeAsync(
   value: unknown,
-  replacer?: Replacer
+  replacers?: Replacers
 ): Promise<FormData> {
   const formData = new FormData();
   const result = internal_encodeFormData(value, {
     formData,
-    replacer,
+    replacers,
   });
 
   await Promise.all(result.pendingPromises);
@@ -84,37 +84,38 @@ function internal_encodeFormData(
   value: unknown,
   opts: {
     formData: FormData;
-    replacer?: Replacer;
+    replacers?: Replacers;
   }
 ) {
-  const { formData, replacer: _replacer } = opts;
-  return internal_stringify(value, {
-    replacer: (input, ctx) => {
-      if (_replacer) {
-        const ret = _replacer(input, ctx);
-        if (ret !== undefined) {
-          return ret;
-        }
-      }
+  const { formData, replacers: replacers_ } = opts;
+  return internal_serialize(value, {
+    replacers: {
+      [Tag.FormData]: (input, ctx) => {
+        if (input instanceof FormData) {
+          const id = ctx.nextId();
+          for (const [key, entry] of input) {
+            const fieldName = `${id}_${key}`;
+            formData.set(fieldName, entry);
+          }
 
-      if (input instanceof FormData) {
-        const id = ctx.nextId();
-
-        for (const [key, entry] of input) {
-          const fieldName = `${id}_${key}`;
-          formData.set(fieldName, entry);
+          // return serializeTagValue(Tag.FormData, id);
+          return id.toString()
         }
 
-        return serializeTagValue(Tag.FormData, id);
-      }
+        return undefined;
 
-      if (input instanceof File) {
-        const id = ctx.nextId();
-        formData.set(`${id}_file`, input);
-        return serializeTagValue(Tag.File, id);
-      }
+      },
+      [Tag.File]: (input, ctx) => {
+        if (input instanceof File) {
+          const id = ctx.nextId();
+          formData.set(`${id}_file`, input);
+          // return serializeTagValue(Tag.File, id);
+          return id.toString()
+        }
 
-      return undefined;
+        return undefined;
+      },
+      ...replacers_
     },
   });
 }
@@ -145,7 +146,7 @@ type DecodeOptions = {
  */
 export function decode(
   value: FormData,
-  reviver?: Reviver | null,
+  revivers?: Revivers | null,
   opts?: DecodeOptions
 ): unknown {
   const { types } = opts || {};
@@ -165,14 +166,7 @@ export function decode(
     }
   })();
 
-  const deserizalizeValue = (input: any): unknown => {
-    if (reviver) {
-      const ret = reviver(input);
-      if (ret !== undefined) {
-        return ret;
-      }
-    }
-
+  const deserialize = (input: any): unknown => {
     switch (typeof input) {
       case "number":
         return input;
@@ -181,6 +175,20 @@ export function decode(
       case "string": {
         if (input[0] === "$") {
           const maybeTag = input.slice(1);
+
+          // Custom keys are in the form of: `$_{key}_`
+          if (revivers && maybeTag.startsWith("_")) {
+            const type = maybeTag.slice(1);
+            const reviver = revivers[type];
+
+            if (reviver == null) {
+              throw new SeriaError(`Reviver for key '${type}' was not found`)
+            }
+
+            const id = type.slice(type.lastIndexOf("_") - 1);
+            const val = value.get(id);
+            return reviver(String(val));
+          }
 
           switch (true) {
             case maybeTag[0] === Tag.String: {
@@ -220,7 +228,7 @@ export function decode(
                   const data = JSON.parse(String(values)); // This is stored as an Array<string>
                   if (Array.isArray(data)) {
                     for (const item of data) {
-                      set.add(deserizalizeValue(item));
+                      set.add(deserialize(item));
                     }
                   }
                 }
@@ -241,8 +249,8 @@ export function decode(
                   const data = JSON.parse(String(values)); // This is stored as an Array<[string, string]>
                   if (Array.isArray(data)) {
                     for (const [key, value] of data) {
-                      const decodedKey = deserizalizeValue(key);
-                      const decodedValue = deserizalizeValue(value);
+                      const decodedKey = deserialize(key);
+                      const decodedValue = deserialize(value);
                       map.set(decodedKey, decodedValue);
                     }
                   }
@@ -263,7 +271,7 @@ export function decode(
               }
 
               try {
-                const resolvedValue = deserizalizeValue(
+                const resolvedValue = deserialize(
                   JSON.parse(String(rawValue))
                 );
                 return Promise.resolve(resolvedValue);
@@ -291,7 +299,7 @@ export function decode(
 
                 const generator = (async function* () {
                   for (const item of values) {
-                    const resolvedValue = deserizalizeValue(item);
+                    const resolvedValue = deserialize(item);
                     yield resolvedValue;
                   }
                 })();
@@ -345,14 +353,14 @@ export function decode(
         } else if (Array.isArray(input)) {
           const arr: any[] = [];
           for (const item of input) {
-            arr.push(deserizalizeValue(item));
+            arr.push(deserialize(item));
           }
           return arr;
         } else if (isPlainObject(input)) {
           const obj: Record<string, unknown> = {};
 
           for (const [key, value] of Object.entries(input)) {
-            obj[key] = deserizalizeValue(value);
+            obj[key] = deserialize(value);
           }
 
           return obj;
@@ -365,7 +373,7 @@ export function decode(
     }
   };
 
-  return deserizalizeValue(baseValue);
+  return deserialize(baseValue);
 }
 
 function deserializeBuffer(tag: Tag, input: string, context: DecodeContext) {

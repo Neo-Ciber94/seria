@@ -23,9 +23,27 @@ const obj = {
   regExp: /\w+/gi,
 } as const;
 
+// Seria do not support Regex, URL or Error currently
+
+const RegExp_Tag = "1";
+
+const replacers = {
+  [RegExp_Tag]: (value: unknown) => value instanceof RegExp ? value.toString() : undefined
+}
+
+const revivers = {
+  [RegExp_Tag]: (raw: unknown) => {
+    const parts = String(raw).slice(2);
+    const split = parts.lastIndexOf("/");
+    const body = parts.slice(1, split);
+    const flags = parts.slice(split + 1);
+    return new RegExp(body, flags);
+  }
+}
+
 describe("Benchmark stringify", () => {
   bench("seria.stringify", () => {
-    const _json = seria.stringify(obj, seriaReplacer);
+    const _json = seria.stringify(obj, replacers);
   });
 
   bench("superjson.stringify", () => {
@@ -38,12 +56,12 @@ describe("Benchmark stringify", () => {
 });
 
 describe("Benchmark parse", () => {
-  const seriaJson = seria.stringify(obj, seriaReplacer);
+  const seriaJson = seria.stringify(obj, replacers);
   const superjsonJson = superjson.stringify(obj);
   const devalueJson = devalue.stringify(obj);
 
   bench("seria.parse", () => {
-    const _value = seria.parse(seriaJson, seriaReviver);
+    const _value = seria.parse(seriaJson, revivers);
   });
 
   bench("superjson.parse", () => {
@@ -57,36 +75,16 @@ describe("Benchmark parse", () => {
 
 describe("Benchmark FormData encode", async () => {
   bench("seriaFormData.encode", () => {
-    const _value = seriaFormData.encode(obj, seriaReplacer);
+    const _value = seriaFormData.encode(obj, replacers);
   });
 });
 
 describe("Benchmark FormData decode", async () => {
-  const formData = seriaFormData.encode(obj, seriaReplacer);
+  const formData = seriaFormData.encode(obj, replacers);
 
   bench("seriaFormData.decode", () => {
-    const _value = seriaFormData.decode(formData, seriaReviver);
+    const _value = seriaFormData.decode(formData, revivers);
   });
 });
 
-// Seria do not support Regex, URL or Error currently
 
-function seriaReplacer(value: unknown) {
-  if (value instanceof RegExp) {
-    return `$2${value.toString()}`; // `$2` as tag for RegExp
-  }
-
-  return undefined;
-}
-
-function seriaReviver(value: unknown) {
-  if (typeof value === "string" && value.startsWith("$2")) {
-    const parts = value.slice(2);
-    const split = parts.lastIndexOf("/");
-    const body = parts.slice(1, split);
-    const flags = parts.slice(split + 1);
-    return new RegExp(body, flags);
-  }
-
-  return undefined;
-}
