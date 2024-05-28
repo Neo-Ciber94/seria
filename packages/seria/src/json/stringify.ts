@@ -13,13 +13,13 @@ import {
 
 type SerializeContext = {
   output: unknown[];
-  writtenValues: Map<number, unknown>;
+  serializedValues: Map<number, unknown>;
   pendingPromisesMap: Map<number, TrackingPromise<any>>;
   pendingIteratorsMap: Map<number, TrackingAsyncIterable<any>>;
   space?: string | number;
   nextId: () => number;
   serialize: (input: any) => unknown;
-  checkWrittenValues: () => void;
+  checkSerialized: () => void;
 };
 
 export type Replacer = (
@@ -183,7 +183,7 @@ export function internal_stringify(
   }
 ) {
   const { replacer, space, initialID = 1 } = opts;
-  const writtenValues = new Map<number, unknown>();
+  const serializedValues = new Map<number, unknown>();
   const pendingPromisesMap = new Map<number, TrackingPromise<any>>();
   const pendingIteratorsMap = new Map<number, TrackingAsyncIterable<any>>();
   const output: unknown[] = [];
@@ -194,22 +194,22 @@ export function internal_stringify(
     return id++;
   };
 
-  // Update the references of the written values
-  const checkWrittenValues = () => {
-    for (const [id, value] of writtenValues) {
+  // Update the references of the serialized values
+  const checkSerialized = () => {
+    for (const [id, value] of serializedValues) {
       output[id] = value;
     }
   };
 
   const context: SerializeContext = {
     output,
-    writtenValues,
+    serializedValues,
     pendingPromisesMap,
     pendingIteratorsMap,
     space,
     nextId,
     serialize,
-    checkWrittenValues,
+    checkSerialized,
   };
 
   function serialize(input: any) {
@@ -300,7 +300,8 @@ export function internal_stringify(
   const baseValue = serialize(value);
   output[0] = baseValue;
 
-  checkWrittenValues();
+  // Update all the serialized values
+  checkSerialized();
 
   return {
     output,
@@ -354,7 +355,7 @@ function serializeArray(input: Array<any>, context: SerializeContext) {
 }
 
 function serializeSet(input: Set<any>, context: SerializeContext) {
-  const { writtenValues: referencesMap } = context;
+  const { serializedValues: referencesMap } = context;
   const items: unknown[] = [];
 
   for (const val of input) {
@@ -367,7 +368,7 @@ function serializeSet(input: Set<any>, context: SerializeContext) {
 }
 
 function serializeMap(input: Map<any, any>, context: SerializeContext) {
-  const { writtenValues: referencesMap } = context;
+  const { serializedValues: referencesMap } = context;
   const items: [unknown, unknown][] = [];
 
   for (const [k, v] of input) {
@@ -404,8 +405,8 @@ function serializePromise(input: Promise<any>, context: SerializeContext) {
   // We create a new promise that resolve to the serialized value
   const resolvingPromise = input.then((value) => {
     const ret = context.serialize(value);
-    context.writtenValues.set(id, ret);
-    context.checkWrittenValues(); // Update the values with the new one
+    context.serializedValues.set(id, ret);
+    context.checkSerialized(); // Update the values with the new one
     return value;
   });
 
@@ -425,7 +426,7 @@ function serializeTypedArray(
 ) {
   const id = context.nextId();
   const buffer = bufferToBase64(input.buffer);
-  context.writtenValues.set(id, buffer);
+  context.serializedValues.set(id, buffer);
   return serializeTagValue(tag, id);
 }
 
@@ -459,15 +460,15 @@ function serializeAsyncIterable(
 
       // Push the new generated value
       const items = [...((context.output[id] as any[]) || []), ret];
-      context.writtenValues.set(id, items);
-      context.checkWrittenValues();
+      context.serializedValues.set(id, items);
+      context.checkSerialized();
       yield ret;
     }
 
     // Notify is done
     const items = [...((context.output[id] as any[]) || []), "done"];
-    context.writtenValues.set(id, items);
-    context.checkWrittenValues();
+    context.serializedValues.set(id, items);
+    context.checkSerialized();
     yield "done";
   })();
 
