@@ -4,7 +4,6 @@ import { Tag, isTypedArrayTag } from "../tag";
 import {
   type Replacers,
   internal_serialize,
-  serializeTagValue,
 } from "../json/stringify";
 import { type Revivers } from "../json/parse";
 import { isPlainObject } from "../utils";
@@ -87,37 +86,7 @@ function internal_encodeFormData(
     replacers?: Replacers;
   }
 ) {
-  const { formData, replacers: replacers_ } = opts;
-  return internal_serialize(value, {
-    replacers: {
-      [Tag.FormData]: (input, ctx) => {
-        if (input instanceof FormData) {
-          const id = ctx.nextId();
-          for (const [key, entry] of input) {
-            const fieldName = `${id}_${key}`;
-            formData.set(fieldName, entry);
-          }
-
-          // return serializeTagValue(Tag.FormData, id);
-          return id.toString()
-        }
-
-        return undefined;
-
-      },
-      [Tag.File]: (input, ctx) => {
-        if (input instanceof File) {
-          const id = ctx.nextId();
-          formData.set(`${id}_file`, input);
-          // return serializeTagValue(Tag.File, id);
-          return id.toString()
-        }
-
-        return undefined;
-      },
-      ...replacers_
-    },
-  });
+  return internal_serialize(value, opts);
 }
 
 // Inspired on: https://github.com/facebook/react/blob/1293047d6063f3508af15e68cca916660ded791e/packages/react-server/src/ReactFlightReplyServer.js#L379-L380
@@ -140,20 +109,20 @@ type DecodeOptions = {
 
 /**
  * Decode a `FormData` into a value.
- * @param value The formData to decode.
+ * @param encoded The formData to decode.
  * @param reviver Converts a value.
  * @returns The decoded value.
  */
 export function decode(
-  value: FormData,
+  encoded: FormData,
   revivers?: Revivers | null,
   opts?: DecodeOptions
 ): unknown {
   const { types } = opts || {};
   const { FormData: FormDataConstructor = globalThis.FormData } = types || {};
 
-  const baseValue = (function () {
-    const entry = value.get("0");
+  const value = (function () {
+    const entry = encoded.get("0");
 
     if (!entry) {
       throw new SeriaError("Empty value to decode");
@@ -186,7 +155,7 @@ export function decode(
             }
 
             const id = type.slice(type.lastIndexOf("_") - 1);
-            const val = value.get(id);
+            const val = encoded.get(id);
             return reviver(String(val));
           }
 
@@ -223,7 +192,7 @@ export function decode(
               const set = new Set<any>();
 
               try {
-                const values = value.get(id);
+                const values = encoded.get(id);
                 if (values) {
                   const data = JSON.parse(String(values)); // This is stored as an Array<string>
                   if (Array.isArray(data)) {
@@ -244,7 +213,7 @@ export function decode(
               const map = new Map<any, any>();
 
               try {
-                const values = value.get(id);
+                const values = encoded.get(id);
                 if (values) {
                   const data = JSON.parse(String(values)); // This is stored as an Array<[string, string]>
                   if (Array.isArray(data)) {
@@ -264,7 +233,7 @@ export function decode(
             }
             case maybeTag[0] === Tag.Promise: {
               const id = input.slice(2);
-              const rawValue = value.get(id);
+              const rawValue = encoded.get(id);
 
               if (!rawValue) {
                 throw new SeriaError("Failed to find promise resolved value");
@@ -281,7 +250,7 @@ export function decode(
             }
             case maybeTag[0] === Tag.AsyncIterator: {
               const id = input.slice(2);
-              const json = value.get(id);
+              const json = encoded.get(id);
 
               if (!json) {
                 throw new SeriaError(`Unable to get async iterator '${id}'`);
@@ -315,7 +284,7 @@ export function decode(
               const formData = new FormDataConstructor();
               const id = input.slice(2);
 
-              value.forEach((entry, key) => {
+              encoded.forEach((entry, key) => {
                 const entryKey = `${id}_`;
                 if (key.startsWith(entryKey)) {
                   const fieldName = key.slice(entryKey.length);
@@ -325,20 +294,20 @@ export function decode(
 
               return formData;
             }
-            case isTypedArrayTag(maybeTag[0]): {
-              return deserializeBuffer(maybeTag[0], input, {
-                references: value,
-              });
-            }
             case maybeTag[0] === Tag.File: {
               const id = input.slice(2);
-              const file = value.get(`${id}_file`);
+              const file = encoded.get(`${id}_file`);
 
               if (!file) {
                 throw new SeriaError(`File '${id}_file' was not found`);
               }
 
               return file;
+            }
+            case isTypedArrayTag(maybeTag[0]): {
+              return deserializeBuffer(maybeTag[0], input, {
+                references: encoded,
+              });
             }
             default:
               throw new SeriaError(`Unknown reference value: ${input}`);
@@ -373,7 +342,7 @@ export function decode(
     }
   };
 
-  return deserialize(baseValue);
+  return deserialize(value);
 }
 
 function deserializeBuffer(tag: Tag, input: string, context: DecodeContext) {

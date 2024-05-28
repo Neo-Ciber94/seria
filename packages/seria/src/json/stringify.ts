@@ -172,18 +172,21 @@ export function stringifyToStream(
   });
 }
 
+type SerializeOptions = {
+  replacers?: Replacers | null;
+  initialID?: number;
+  space?: number | string;
+  formData?: FormData
+}
+
 /**
  * @internal
  */
 export function internal_serialize(
   value: unknown,
-  opts: {
-    replacers?: Replacers | null;
-    initialID?: number;
-    space?: number | string;
-  }
+  opts: SerializeOptions
 ) {
-  const { replacers: replacer, space, initialID = 1 } = opts;
+  const { replacers: replacer, space, initialID = 1, formData } = opts;
   const serializedValues = new Map<number, unknown>();
   const referencesMap = new Map<object, number>();
   const pendingPromisesMap = new Map<number, TrackingPromise<any>>();
@@ -273,6 +276,21 @@ export function internal_serialize(
           return serializePromise(input, context);
         } else if (isAsyncIterable(input)) {
           return serializeAsyncIterable(input, context);
+        }
+        // Serialize FormData
+        else if (formData && input instanceof FormData) {
+          const id = nextId();
+          for (const [key, entry] of input) {
+            const fieldName = `${id}_${key}`;
+            formData.set(fieldName, entry);
+          }
+
+          return serializeTagValue(Tag.FormData, id);
+        }
+        else if (formData && input instanceof File) {
+          const id = nextId();
+          formData.set(`${id}_file`, input);
+          return serializeTagValue(Tag.File, id);
         }
         // Serialize typed arrrays
         else if (input instanceof ArrayBuffer) {
