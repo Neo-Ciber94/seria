@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createChannel, type Sender } from "../channel";
 import { deferredPromise, type DeferredPromise } from "../deferredPromise";
+import { SeriaError } from "../error";
 import { Tag, isTypedArrayTag } from "../tag";
 import {
   isTrackingAsyncIterable,
@@ -64,7 +65,7 @@ export async function parseFromStream(
     }
 
     if (!resolved) {
-      deferred.reject(new Error("Unable to find resolved value"));
+      deferred.reject(new SeriaError("Unable to find resolved value"));
     }
 
     await Promise.all(promises);
@@ -109,7 +110,7 @@ export function internal_parseFromStream(
             const deferred = promisesMap.get(data.id);
 
             if (!deferred) {
-              throw new Error(`Promise with id: '${data.id}' was not found`);
+              throw new SeriaError(`Promise with id: '${data.id}' was not found`);
             }
 
             try {
@@ -133,7 +134,7 @@ export function internal_parseFromStream(
             const sender = channelsMap.get(data.id);
 
             if (!sender) {
-              throw new Error(
+              throw new SeriaError(
                 `AsyncIterator sender with id '${data.id}' was not found`
               );
             }
@@ -191,7 +192,7 @@ function internal_parse(value: string, opts?: Options) {
       const references = JSON.parse(value) as readonly unknown[];
       return { references, base: references[0] };
     } catch {
-      throw new Error(`Failed to parse base value: ${value}`);
+      throw new SeriaError(`Failed to parse base value: ${value}`);
     }
   })();
 
@@ -287,7 +288,7 @@ function internal_parse(value: string, opts?: Options) {
               const ref = existing.get(id);
 
               if (ref === undefined) {
-                throw new Error("Reference not found")
+                throw new SeriaError("Reference not found")
               }
 
               return ref;
@@ -303,14 +304,14 @@ function internal_parse(value: string, opts?: Options) {
                   return deferred.promise;
                 }
 
-                throw new Error("Failed to find promise resolved value");
+                throw new SeriaError("Failed to find promise resolved value");
               }
 
               try {
                 const resolvedValue = deserialize(rawValue);
                 return trackPromise(id, Promise.resolve(resolvedValue));
               } catch {
-                throw new Error("Unable to resolve promise value");
+                throw new SeriaError("Unable to resolve promise value");
               }
             }
             case maybeTag[0] === Tag.AsyncIterator: {
@@ -346,7 +347,7 @@ function internal_parse(value: string, opts?: Options) {
 
                 return trackedAsyncIterator;
               } else {
-                throw new Error(
+                throw new SeriaError(
                   "Failed to parse async iterator, expected array of values"
                 );
               }
@@ -357,10 +358,10 @@ function internal_parse(value: string, opts?: Options) {
               });
             }
             default:
-              throw new Error(`Unknown value: ${input}`);
+              throw new SeriaError(`Unknown value: ${input}`);
           }
         } else {
-          throw new Error(`Invalid reference value: ${input}`);
+          throw new SeriaError(`Invalid reference value: ${input}`);
         }
       }
       case "object": {
@@ -382,11 +383,11 @@ function internal_parse(value: string, opts?: Options) {
 
           return obj;
         } else {
-          throw new Error(`Invalid object value: ${JSON.stringify(input)}`);
+          throw new SeriaError(`Invalid object value: ${JSON.stringify(input)}`);
         }
       }
       default:
-        throw new Error(`Invalid value: ${input}`);
+        throw new SeriaError(`Invalid value: ${input}`);
     }
   };
 
@@ -399,7 +400,7 @@ function deserializeBuffer(tag: Tag, input: string, context: Context) {
     const id = parseTagId(input.slice(2));
     const data = context.references[id];
     if (!data) {
-      throw new Error(`Unable to get '${input}' buffer data`);
+      throw new SeriaError(`Unable to get '${input}' buffer data`);
     }
     return String(data);
   };
@@ -440,7 +441,7 @@ function deserializeBuffer(tag: Tag, input: string, context: Context) {
       return new DataView(bytes.buffer);
     }
     default:
-      throw new Error(`Unknown typed array buffer: ${input}`);
+      throw new SeriaError(`Unknown typed array buffer: ${input}`);
   }
 }
 
@@ -448,7 +449,7 @@ function parseTagId(input: string) {
   const id = parseInt(input);
 
   if (!Number.isFinite(id) || Number.isNaN(id)) {
-    throw new Error(`Invalid tag id: '${input}'`);
+    throw new SeriaError(`Invalid tag id: '${input}'`);
   }
 
   return id;

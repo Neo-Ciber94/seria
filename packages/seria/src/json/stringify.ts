@@ -10,6 +10,7 @@ import {
   trackAsyncIterable,
   type TrackingAsyncIterable,
 } from "../trackingAsyncIterable";
+import { SeriaError } from "../error";
 
 
 type SerializeContext = {
@@ -53,11 +54,11 @@ export function stringify(
   );
 
   if (pendingPromises.length > 0) {
-    throw new Error("Serialiation result have pending promises");
+    throw new SeriaError("Serialiation result have pending promises");
   }
 
   if (pendingIterators.length > 0) {
-    throw new Error("Serialiation result have pending async iterators");
+    throw new SeriaError("Serialiation result have pending async iterators");
   }
 
   return JSON.stringify(output, null, space);
@@ -298,16 +299,16 @@ export function internal_stringify(
         } else if (input instanceof DataView) {
           return serializeTypedArray(Tag.DataView, input, context);
         } else {
-          throw new Error(
+          throw new SeriaError(
             `Unable to serialize value: ${JSON.stringify(input)}`
           );
         }
       }
       case "function": {
-        throw new Error("Functions cannot be serialized");
+        throw new SeriaError("Functions cannot be serialized");
       }
       default:
-        throw new Error(
+        throw new SeriaError(
           `Unreachable. Reaching this code should be considered a bug`
         );
     }
@@ -411,7 +412,7 @@ function serializePlainObject(
 
   for (const [key, value] of Object.entries(input)) {
     if (typeof key === 'symbol') {
-      throw new Error("Cannot serialize an object with a 'symbol' as key")
+      throw new SeriaError("Cannot serialize an object with a 'symbol' as key")
     }
 
     obj[key] = context.serialize(value);

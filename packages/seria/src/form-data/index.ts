@@ -12,6 +12,7 @@ import { base64ToBuffer } from "../utils";
 
 // The browser `FormData` is assignable to this one
 import type { FormData as UndiciFormData } from "undici";
+import { SeriaError } from "../error";
 
 /**
  * Encodes a value into a `FormData`.
@@ -31,11 +32,11 @@ export function encode(value: unknown, replacer?: Replacer): FormData {
   );
 
   if (pendingPromises.length > 0) {
-    throw new Error("Serialiation result have pending promises");
+    throw new SeriaError("Serialiation result have pending promises");
   }
 
   if (pendingIterators.length > 0) {
-    throw new Error("Serialiation result have pending async iterators");
+    throw new SeriaError("Serialiation result have pending async iterators");
   }
 
   for (let i = 0; i < output.length; i++) {
@@ -154,13 +155,13 @@ export function decode(
     const entry = value.get("0");
 
     if (!entry) {
-      throw new Error("Empty value to decode");
+      throw new SeriaError("Empty value to decode");
     }
 
     try {
       return JSON.parse(String(entry));
     } catch {
-      throw new Error(`Failed to parse base value: ${entry}`);
+      throw new SeriaError(`Failed to parse base value: ${entry}`);
     }
   })();
 
@@ -258,7 +259,7 @@ export function decode(
               const rawValue = value.get(id);
 
               if (!rawValue) {
-                throw new Error("Failed to find promise resolved value");
+                throw new SeriaError("Failed to find promise resolved value");
               }
 
               try {
@@ -267,7 +268,7 @@ export function decode(
                 );
                 return Promise.resolve(resolvedValue);
               } catch {
-                throw new Error("Unable to resolve promise value");
+                throw new SeriaError("Unable to resolve promise value");
               }
             }
             case maybeTag[0] === Tag.AsyncIterator: {
@@ -275,7 +276,7 @@ export function decode(
               const json = value.get(id);
 
               if (!json) {
-                throw new Error(`Unable to get async iterator '${id}'`);
+                throw new SeriaError(`Unable to get async iterator '${id}'`);
               }
 
               const asyncIteratorValues = JSON.parse(String(json));
@@ -297,7 +298,7 @@ export function decode(
 
                 return generator;
               } else {
-                throw new Error(
+                throw new SeriaError(
                   "Failed to parse async iterator, expected array of values"
                 );
               }
@@ -326,16 +327,16 @@ export function decode(
               const file = value.get(`${id}_file`);
 
               if (!file) {
-                throw new Error(`File '${id}_file' was not found`);
+                throw new SeriaError(`File '${id}_file' was not found`);
               }
 
               return file;
             }
             default:
-              throw new Error(`Unknown reference value: ${input}`);
+              throw new SeriaError(`Unknown reference value: ${input}`);
           }
         } else {
-          throw new Error(`Invalid reference value: ${input}`);
+          throw new SeriaError(`Invalid reference value: ${input}`);
         }
       }
       case "object": {
@@ -356,11 +357,11 @@ export function decode(
 
           return obj;
         } else {
-          throw new Error(`Invalid object value: ${JSON.stringify(input)}`);
+          throw new SeriaError(`Invalid object value: ${JSON.stringify(input)}`);
         }
       }
       default:
-        throw new Error(`Invalid value: ${input}`);
+        throw new SeriaError(`Invalid value: ${input}`);
     }
   };
 
@@ -372,7 +373,7 @@ function deserializeBuffer(tag: Tag, input: string, context: DecodeContext) {
     const id = input.slice(2);
     const data = context.references.get(id);
     if (!data) {
-      throw new Error(`Unable to get '${input}' buffer data`);
+      throw new SeriaError(`Unable to get '${input}' buffer data`);
     }
     return JSON.parse(String(data));
   };
@@ -413,6 +414,6 @@ function deserializeBuffer(tag: Tag, input: string, context: DecodeContext) {
       return new DataView(bytes.buffer);
     }
     default:
-      throw new Error(`Unknown typed array buffer: ${input}`);
+      throw new SeriaError(`Unknown typed array buffer: ${input}`);
   }
 }
