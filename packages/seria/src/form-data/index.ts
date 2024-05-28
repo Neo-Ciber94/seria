@@ -9,10 +9,10 @@ import {
 import { type Reviver } from "../json/parse";
 import { isPlainObject } from "../utils";
 import { base64ToBuffer } from "../utils";
+import { SeriaError } from "../error";
 
 // The browser `FormData` is assignable to this one
 import type { FormData as UndiciFormData } from "undici";
-import { SeriaError } from "../error";
 
 /**
  * Encodes a value into a `FormData`.
