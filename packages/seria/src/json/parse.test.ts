@@ -78,6 +78,12 @@ describe("Parse value", () => {
     expect(decoded).toStrictEqual({ x: 1, y: "world", z: false });
   });
 
+  test("Parse String object", () => {
+    const encoded = stringify(new String("hola"));
+    const decoded = parse(encoded);
+    expect(decoded).toStrictEqual("hola");
+  });
+
   test("Parse resolved Promise", async () => {
     const encoded = await stringifyAsync(Promise.resolve("adios amigos"));
     const decoded = parse(encoded);
