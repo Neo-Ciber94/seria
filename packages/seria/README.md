@@ -70,33 +70,25 @@ If you serialize a value that contains any `Promise` you need to serialize using
 
 Types supported by `seria` in comparison with the standard `JSON` object.
 
-| Data Type         | seria.stringify/parse | JSON.stringify/parse |
-| ----------------- | --------------------- | -------------------- |
-| string            | ✅                    | ✅                   |
-| number            | ✅                    | ✅                   |
-| boolean           | ✅                    | ✅                   |
-| null              | ✅                    | ✅                   |
-| undefined         | ✅                    | ❌                   |
-| Date              | ✅                    | ❌                   |
-| BigInt            | ✅                    | ❌                   |
-| Promise           | ✅                    | ❌                   |
-| Symbol            | ✅                    | ❌                   |
-| Set               | ✅                    | ❌                   |
-| Map               | ✅                    | ❌                   |
-| ArrayBuffer       | ✅                    | ❌                   |
-| Int8Array         | ✅                    | ❌                   |
-| Uint8Array        | ✅                    | ❌                   |
-| Uint8ClampedArray | ✅                    | ❌                   |
-| Int16Array        | ✅                    | ❌                   |
-| Uint16Array       | ✅                    | ❌                   |
-| Int32Array        | ✅                    | ❌                   |
-| Uint32Array       | ✅                    | ❌                   |
-| Float32Array      | ✅                    | ❌                   |
-| Float64Array      | ✅                    | ❌                   |
-| BigInt64Array     | ✅                    | ❌                   |
-| BigUint64Array    | ✅                    | ❌                   |
-| DataView          | ✅                    | ❌                   |
-| File\*            | ✅                    | ❌                   |
-| FormData\*        | ✅                    | ❌                   |
+| Data Type     | seria.stringify/parse | JSON.stringify/parse |
+| ------------- | --------------------- | -------------------- |
+| string        | ✅                    | ✅                   |
+| number        | ✅                    | ✅                   |
+| boolean       | ✅                    | ✅                   |
+| null          | ✅                    | ✅                   |
+| undefined     | ✅                    | ❌                   |
+| Date          | ✅                    | ❌                   |
+| BigInt        | ✅                    | ❌                   |
+| Promise       | ✅                    | ❌                   |
+| Symbol        | ✅                    | ❌                   |
+| Set           | ✅                    | ❌                   |
+| Map           | ✅                    | ❌                   |
+| ArrayBuffer   | ✅                    | ❌                   |
+| TypedArrays\* | ✅                    | ❌                   |
+| DataView      | ✅                    | ❌                   |
+| File\*        | ✅                    | ❌                   |
+| FormData\*    | ✅                    | ❌                   |
+
+> Typed Arrays https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Typed_arrays
 
 > `File` and `FormData` are supported on `seria/form-data`.
