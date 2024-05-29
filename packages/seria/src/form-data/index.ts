@@ -147,16 +147,17 @@ export function decode(
 
           // Custom keys are in the form of: `$_{key}_`
           if (revivers && maybeTag.startsWith("_")) {
-            const type = maybeTag.slice(1);
+            const type = maybeTag.slice(1, maybeTag.lastIndexOf("_"))
             const reviver = revivers[type];
 
             if (reviver == null) {
               throw new SeriaError(`Reviver for key '${type}' was not found`)
             }
 
-            const id = type.slice(type.lastIndexOf("_") - 1);
-            const val = encoded.get(id);
-            return reviver(String(val));
+            const id = maybeTag.slice(type.length + 2)
+            const raw = JSON.parse(String(encoded.get(id)))
+            const val = deserialize(raw);
+            return reviver(val);
           }
 
           switch (true) {

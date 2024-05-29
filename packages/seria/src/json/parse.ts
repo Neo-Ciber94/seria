@@ -18,7 +18,7 @@ type Context = {
  * A function that convert a value.
  */
 export type Revivers = {
-  [tag: string]: (value: string) => unknown;
+  [tag: string]: (value: any) => unknown;
 }
 
 /**
@@ -209,28 +209,18 @@ function internal_parse(value: string, opts?: Options) {
           const maybeTag = input.slice(1);
 
           // Custom keys are in the form of: `$_{key}_`
-          if (revivers && revivers[maybeTag[0]]) {
-            const type = maybeTag[0]
+          if (revivers && maybeTag.startsWith("_")) {
+            const type = maybeTag.slice(1, maybeTag.lastIndexOf("_"))
             const reviver = revivers[type];
 
             if (reviver == null) {
               throw new SeriaError(`Reviver for key '${type}' was not found`)
             }
 
-            const val = maybeTag.slice(1);
+            const rawId = maybeTag.slice(type.length + 2)
+            const id = parseTagId(rawId);
+            const val = deserialize(references[id]);
             return reviver(val);
-
-            // const type = maybeTag.slice(1, maybeTag.lastIndexOf("_"));
-            // const reviver = revivers[type];
-
-            // if (reviver == null) {
-            //   throw new SeriaError(`Reviver for key '${type}' was not found`)
-            // }
-
-            // const rawId = maybeTag.slice(type.length + 2);
-            // const id = parseTagId(rawId);
-            // const value = references[id];
-            // return reviver(String(value));
           }
 
           switch (true) {

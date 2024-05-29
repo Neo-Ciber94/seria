@@ -480,25 +480,22 @@ describe("Custom parser with reviver and replacer", () => {
       regex: /^([a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})*$/i,
     };
 
-    const Tag_URL = "1"
-    const Tag_RegExp = "2";
-
     const json = stringify(obj, {
-      [Tag_URL]: (value) => value instanceof URL ? value.href : undefined,
-      [Tag_RegExp]: (value) => value instanceof RegExp ? value.toString() : undefined
+      URL: (value) => value instanceof URL ? value.href : undefined,
+      RegExp: (value) => value instanceof RegExp ? value.toString() : undefined
     });
 
-    const value: any = parse(json, {
-      [Tag_URL]: raw => {
+    const value = parse(json, {
+      URL: raw => {
         return new URL(raw as string);
       },
-      [Tag_RegExp]: raw => {
+      RegExp: raw => {
         const value = raw as string;
         const body = value.slice(1, value.lastIndexOf("/"));
         const flags = value.slice(value.lastIndexOf("/") + 1);
         return new RegExp(body, flags);
       }
-    });
+    }) as typeof obj;
 
     expect(value).toStrictEqual({
       url: new URL("http://127.0.0.1:3000/custom?text=hello&num=34"),

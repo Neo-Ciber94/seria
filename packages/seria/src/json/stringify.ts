@@ -25,7 +25,7 @@ type SerializeContext = {
 };
 
 export type Replacers = {
-  [tag: string]: (value: unknown, ctx: SerializeContext) => string | void;
+  [tag: string]: (value: unknown, ctx: SerializeContext) => unknown | void;
 }
 
 /**
@@ -226,12 +226,10 @@ export function internal_serialize(
       for (const [key, fn] of Object.entries(replacer)) {
         const val = fn(input, context);
         if (val !== undefined) {
-          // We use _ for custom tags
-          // const id = context.nextId();
-          // const replacerKey = `_${key}_`;
-          // serializedValues.set(id, val);
-          // return serializeTagValue(replacerKey as Tag, id);
-          return `$${key}${val}`
+          const id = context.nextId();
+          const replacerKey = `_${key}_`;
+          serializedValues.set(id, serialize(val));
+          return serializeTagValue(replacerKey as Tag, id);
         }
       }
     }
