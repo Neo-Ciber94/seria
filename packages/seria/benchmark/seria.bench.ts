@@ -25,18 +25,15 @@ const obj = {
 
 // Seria do not support Regex, URL or Error currently
 
-const RegExp_Tag = "1";
-
 const replacers = {
-  [RegExp_Tag]: (value: unknown) => value instanceof RegExp ? value.toString() : undefined
+  RegExp: (value: unknown) => value instanceof RegExp ? value.toString() : undefined
 }
 
 const revivers = {
-  [RegExp_Tag]: (raw: unknown) => {
-    const parts = String(raw).slice(2);
-    const split = parts.lastIndexOf("/");
-    const body = parts.slice(1, split);
-    const flags = parts.slice(split + 1);
+  RegExp: (value: string) => {
+    const split = value.lastIndexOf("/");
+    const body = value.slice(1, split);
+    const flags = value.slice(split + 1);
     return new RegExp(body, flags);
   }
 }
