@@ -1,87 +1,46 @@
 import { describe, bench } from "vitest";
 import * as seria from "../src";
 import * as seriaFormData from "../src/form-data";
-import * as superjson from "superjson";
-import * as devalue from "devalue";
 
 const obj = {
-  string: "Hello, world!",
-  number: 42,
-  boolean: true,
-  nullValue: null,
-  array: [1, 2, 3],
-  object: { key: "value" },
-  undefinedValue: undefined,
-  bigintValue: BigInt(123456789),
-  date: new Date(),
-  set: new Set([1, 2, 3]),
-  map: new Map([
-    [1, "one"],
-    [2, "two"],
-    [3, "three"],
-  ]),
-  regExp: /\w+/gi,
+    string: "Hello, world!",
+    number: 42,
+    boolean: true,
+    nullValue: null,
+    array: [1, 2, 3],
+    object: { key: "value" },
+    undefinedValue: undefined,
+    bigintValue: BigInt(123456789),
+    date: new Date(),
+    set: new Set([1, 2, 3]),
+    map: new Map([
+        [1, "one"],
+        [2, "two"],
+        [3, "three"],
+    ]),
+
 } as const;
 
-// Seria do not support Regex, URL or Error currently
-
-const replacers = {
-  RegExp: (value: unknown) => value instanceof RegExp ? value.toString() : undefined
-}
-
-const revivers = {
-  RegExp: (value: string) => {
-    const split = value.lastIndexOf("/");
-    const body = value.slice(1, split);
-    const flags = value.slice(split + 1);
-    return new RegExp(body, flags);
-  }
-}
-
-describe("Benchmark stringify", () => {
-  bench("seria.stringify", () => {
-    const _json = seria.stringify(obj, replacers);
-  });
-
-  bench("superjson.stringify", () => {
-    const _json = superjson.stringify(obj);
-  });
-
-  bench("devalue.stringify", () => {
-    const _json = devalue.stringify(obj);
-  });
-});
-
-describe("Benchmark parse", () => {
-  const seriaJson = seria.stringify(obj, replacers);
-  const superjsonJson = superjson.stringify(obj);
-  const devalueJson = devalue.stringify(obj);
-
-  bench("seria.parse", () => {
-    const _value = seria.parse(seriaJson, revivers);
-  });
-
-  bench("superjson.parse", () => {
-    const _value = superjson.parse(superjsonJson);
-  });
-
-  bench("devalue.parse", () => {
-    const _value = devalue.parse(devalueJson);
-  });
-});
 
 describe("Benchmark FormData encode", async () => {
-  bench("seriaFormData.encode", () => {
-    const _value = seriaFormData.encode(obj, replacers);
-  });
+    bench("seriaFormData.encode", () => {
+        const _value = seriaFormData.encode(obj);
+    });
+
+    bench("seria.stringify", () => {
+        const _value = seria.stringify(obj);
+    });
 });
 
 describe("Benchmark FormData decode", async () => {
-  const formData = seriaFormData.encode(obj, replacers);
+    const formData = seriaFormData.encode(obj);
+    const json = seria.stringify(obj);
 
-  bench("seriaFormData.decode", () => {
-    const _value = seriaFormData.decode(formData, revivers);
-  });
+    bench("seriaFormData.decode", () => {
+        const _value = seriaFormData.decode(formData);
+    });
+
+    bench("seria.parse", () => {
+        const _value = seria.parse(json);
+    });
 });
-
-
