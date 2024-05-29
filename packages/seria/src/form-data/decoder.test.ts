@@ -420,31 +420,18 @@ describe("Decode with reviver and replacer", () => {
       regex: /^([a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})*$/i,
     };
 
-    const formData = await encodeAsync(obj, (val) => {
-      if (val instanceof URL) {
-        return `$1${val.href}`; // `$1` as tag for URL
-      }
-
-      if (val instanceof RegExp) {
-        return `$2${val.toString()}`; // `$2` as tag for RegExp
-      }
-
-      return undefined;
+    const formData = await encodeAsync(obj, {
+      URL: (value) => value instanceof URL ? value.href : undefined,
+      RegExp: (value) => value instanceof RegExp ? value.toString() : undefined,
     });
 
-    const value: any = decode(formData, (val) => {
-      if (typeof val === "string" && val.startsWith("$1")) {
-        return new URL(val.slice(2));
-      }
-
-      if (typeof val === "string" && val.startsWith("$2")) {
-        const parts = val.slice(2);
-        const body = parts.slice(1, parts.lastIndexOf("/"));
-        const flags = parts.slice(parts.lastIndexOf("/") + 1);
+    const value: any = decode(formData, {
+      URL: (value: string) => new URL(value),
+      RegExp: (value: string) => {
+        const body = value.slice(1, value.lastIndexOf("/"));
+        const flags = value.slice(value.lastIndexOf("/") + 1);
         return new RegExp(body, flags);
       }
-
-      return undefined;
     });
 
     expect(value).toStrictEqual({

@@ -12,7 +12,6 @@ import {
 } from "../trackingAsyncIterable";
 import { SeriaError } from "../error";
 
-
 type SerializeContext = {
   output: unknown[];
   serializedValues: Map<number, unknown>;
@@ -25,30 +24,27 @@ type SerializeContext = {
   checkSerialized: () => void;
 };
 
-export type Replacer = (
-  value: any,
-  context: SerializeContext
-) => string | undefined;
-
-
+export type Replacers = {
+  [tag: string]: (value: unknown, ctx: SerializeContext) => unknown | void;
+}
 
 /**
  * Converts a value to a json string.
  * @param value The value to convert.
- * @param replacer A function that encode a custom value.
+ * @param replacers A function that encode a custom value.
  * @param space Adds indentation, white space to the json values line-breaks.
  * @returns The json string.
  * @throws If the promise contains any promise. Use `stringifyAsync` or `stringifyToStream` to convert value with promises.
  */
 export function stringify(
   value: unknown,
-  replacer?: Replacer | null,
+  replacers?: Replacers | null,
   space?: number | string
 ) {
-  const { output, pendingPromises, pendingIterators } = internal_stringify(
+  const { output, pendingPromises, pendingIterators } = internal_serialize(
     value,
     {
-      replacer,
+      replacers,
       space,
     }
   );
@@ -73,11 +69,11 @@ export function stringify(
  */
 export async function stringifyAsync(
   value: unknown,
-  replacer?: Replacer | null,
+  replacer?: Replacers | null,
   space?: number | string
 ) {
-  const result = internal_stringify(value, {
-    replacer,
+  const result = internal_serialize(value, {
+    replacers: replacer,
     space,
   });
 
@@ -104,11 +100,11 @@ export async function stringifyAsync(
  */
 export function stringifyToStream(
   value: unknown,
-  replacer?: Replacer | null,
+  replacer?: Replacers | null,
   space?: number | string
 ) {
-  const result = internal_stringify(value, {
-    replacer,
+  const result = internal_serialize(value, {
+    replacers: replacer,
     space,
   });
 
@@ -127,8 +123,8 @@ export function stringifyToStream(
 
           // `stringifyAsync` with an initial `id`
           // We use the initial to set the promise on the correct slot
-          const serializedPromise = internal_stringify(resolved, {
-            replacer,
+          const serializedPromise = internal_serialize(resolved, {
+            replacers: replacer,
             initialID: id,
           });
 
@@ -176,18 +172,21 @@ export function stringifyToStream(
   });
 }
 
+type SerializeOptions = {
+  replacers?: Replacers | null;
+  initialID?: number;
+  space?: number | string;
+  formData?: FormData
+}
+
 /**
  * @internal
  */
-export function internal_stringify(
+export function internal_serialize(
   value: unknown,
-  opts: {
-    replacer?: Replacer | null;
-    initialID?: number;
-    space?: number | string;
-  }
+  opts: SerializeOptions
 ) {
-  const { replacer, space, initialID = 1 } = opts;
+  const { replacers: replacer, space, initialID = 1, formData } = opts;
   const serializedValues = new Map<number, unknown>();
   const referencesMap = new Map<object, number>();
   const pendingPromisesMap = new Map<number, TrackingPromise<any>>();
@@ -224,9 +223,14 @@ export function internal_stringify(
   function serialize(input: any) {
     // Custom serializer
     if (replacer) {
-      const serialized = replacer(input, context);
-      if (serialized !== undefined) {
-        return serialized;
+      for (const [key, fn] of Object.entries(replacer)) {
+        const val = fn(input, context);
+        if (val !== undefined) {
+          const id = context.nextId();
+          const replacerKey = `_${key}_`;
+          serializedValues.set(id, serialize(val));
+          return serializeTagValue(replacerKey as Tag, id);
+        }
       }
     }
 
@@ -270,6 +274,21 @@ export function internal_stringify(
           return serializePromise(input, context);
         } else if (isAsyncIterable(input)) {
           return serializeAsyncIterable(input, context);
+        }
+        // Serialize FormData
+        else if (formData && input instanceof FormData) {
+          const id = nextId();
+          for (const [key, entry] of input) {
+            const fieldName = `${id}_${key}`;
+            formData.set(fieldName, entry);
+          }
+
+          return serializeTagValue(Tag.FormData, id);
+        }
+        else if (formData && input instanceof File) {
+          const id = nextId();
+          formData.set(`${id}_file`, input);
+          return serializeTagValue(Tag.File, id);
         }
         // Serialize typed arrrays
         else if (input instanceof ArrayBuffer) {
@@ -377,7 +396,7 @@ function serializeArray(input: Array<any>, context: SerializeContext) {
 }
 
 function serializeSet(input: Set<any>, context: SerializeContext) {
-  const { serializedValues: referencesMap } = context;
+  const { serializedValues } = context;
   const items: unknown[] = [];
 
   for (const val of input) {
@@ -385,12 +404,12 @@ function serializeSet(input: Set<any>, context: SerializeContext) {
   }
 
   const id = context.nextId();
-  referencesMap.set(id, items);
+  serializedValues.set(id, items);
   return serializeTagValue(Tag.Set, id);
 }
 
 function serializeMap(input: Map<any, any>, context: SerializeContext) {
-  const { serializedValues: referencesMap } = context;
+  const { serializedValues } = context;
   const items: [unknown, unknown][] = [];
 
   for (const [k, v] of input) {
@@ -400,7 +419,7 @@ function serializeMap(input: Map<any, any>, context: SerializeContext) {
   }
 
   const id = context.nextId();
-  referencesMap.set(id, items);
+  serializedValues.set(id, items);
   return serializeTagValue(Tag.Map, id);
 }
 

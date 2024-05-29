@@ -17,30 +17,32 @@ type Context = {
 /**
  * A function that convert a value.
  */
-export type Reviver = (value: any) => any | undefined;
+export type Revivers = {
+  [tag: string]: (value: any) => unknown;
+}
 
 /**
  * Parse a `json` string to a value.
  * @param value The `json` value to parse.
- * @param reviver A function to convert a value.
+ * @param revivers A function to convert a value.
  * @returns The parsed value.
  */
-export function parse(value: string, reviver?: Reviver): unknown {
-  const result = internal_parse(value, { reviver });
+export function parse(value: string, revivers?: Revivers): unknown {
+  const result = internal_parse(value, { revivers });
   return result.data;
 }
 
 /**
  * Takes a stream and parse each value until it resolves.
  * @param stream The stream to parse.
- * @param reviver A function to convert a value.
+ * @param revivers A function to convert a value.
  * @returns A promise that resolve to the parsed value.
  */
 export async function parseFromStream(
   stream: ReadableStream<string>,
-  reviver?: Reviver
+  revivers?: Revivers
 ) {
-  const reader = internal_parseFromStream(stream, reviver).getReader();
+  const reader = internal_parseFromStream(stream, revivers).getReader();
   let resolved = false;
   const deferred = deferredPromise();
 
@@ -79,7 +81,7 @@ export async function parseFromStream(
  */
 export function internal_parseFromStream(
   stream: ReadableStream<string>,
-  reviver?: Reviver
+  reviver?: Revivers
 ) {
   const promisesMap = new Map<number, DeferredPromise<unknown>>();
   const channelsMap = new Map<number, Sender<unknown>>();
@@ -92,7 +94,7 @@ export function internal_parseFromStream(
           jsonChunk,
           {
             deferPromises: true,
-            reviver,
+            revivers: reviver,
           }
         );
 
@@ -175,11 +177,11 @@ export function internal_parseFromStream(
 
 type Options = {
   deferPromises?: boolean;
-  reviver?: Reviver;
+  revivers?: Revivers;
 };
 
 function internal_parse(value: string, opts?: Options) {
-  const { deferPromises = false, reviver } = opts || {};
+  const { deferPromises = false, revivers } = opts || {};
   const pendingPromises = new Map<number, DeferredPromise<unknown>>();
   const pendingChannels = new Map<number, Sender<unknown>>();
   const existing = new Map<number, unknown>();
@@ -197,13 +199,6 @@ function internal_parse(value: string, opts?: Options) {
   })();
 
   const deserialize = (input: any): unknown => {
-    if (reviver) {
-      const ret = reviver(input);
-      if (ret !== undefined) {
-        return ret;
-      }
-    }
-
     switch (typeof input) {
       case "number":
         return input;
@@ -212,6 +207,21 @@ function internal_parse(value: string, opts?: Options) {
       case "string": {
         if (input[0] === "$") {
           const maybeTag = input.slice(1);
+
+          // Custom keys are in the form of: `$_{key}_`
+          if (revivers && maybeTag.startsWith("_")) {
+            const type = maybeTag.slice(1, maybeTag.lastIndexOf("_"))
+            const reviver = revivers[type];
+
+            if (reviver == null) {
+              throw new SeriaError(`Reviver for key '${type}' was not found`)
+            }
+
+            const rawId = maybeTag.slice(type.length + 2)
+            const id = parseTagId(rawId);
+            const val = deserialize(references[id]);
+            return reviver(val);
+          }
 
           switch (true) {
             case maybeTag[0] === Tag.String: {
