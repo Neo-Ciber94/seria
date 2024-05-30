@@ -100,7 +100,7 @@ describe("Decode object", async () => {
 
     const encoded = await encodeAsync(obj);
     const decoded: any = decode(encoded);
-
+    
     expect(decoded.str).toStrictEqual("hello");
     expect(decoded.num).toStrictEqual(42);
     expect(decoded.truthty).toStrictEqual(true);

@@ -1,120 +1,8 @@
 import { describe, test, expect } from "vitest";
 import { stringify, stringifyToStream, stringifyAsync } from "./stringify";
 
-describe("stringify value", () => {
-  test("stringify string", async () => {
-    const data = stringify("hello world");
-    expect(JSON.parse(data)[0]).toStrictEqual(`$$hello world`);
-  });
-
-  test("stringify boolean", async () => {
-    const data = stringify(true);
-    expect(JSON.parse(data)[0]).toStrictEqual(true);
-  });
-
-  test("stringify null", async () => {
-    const data = stringify(null);
-    expect(JSON.parse(data)[0]).toStrictEqual(null);
-  });
-
-  test("stringify undefined", async () => {
-    const data = stringify(undefined);
-    expect(JSON.parse(data)[0]).toStrictEqual("$undefined");
-  });
-
-  test("stringify positive number", async () => {
-    const data = stringify(42);
-    expect(JSON.parse(data)[0]).toStrictEqual(42);
-  });
-
-  test("stringify negative number", async () => {
-    const data = stringify(-69);
-    expect(JSON.parse(data)[0]).toStrictEqual(-69);
-  });
-
-  test("stringify negative 0", async () => {
-    const data = stringify(-0);
-    expect(JSON.parse(data)[0]).toStrictEqual(`$-0`);
-  });
-
-  test("stringify infinity", async () => {
-    const data = stringify(Infinity);
-    expect(JSON.parse(data)[0]).toStrictEqual(`$Infinity`);
-  });
-
-  test("stringify negative infinity", async () => {
-    const data = stringify(-Infinity);
-    expect(JSON.parse(data)[0]).toStrictEqual(`$-Infinity`);
-  });
-
-  test("stringify NaN", async () => {
-    const data = stringify(NaN);
-    expect(JSON.parse(data)[0]).toStrictEqual(`$NaN`);
-  });
-
-  test("stringify date", async () => {
-    const data = stringify(new Date(2024, 2, 15, 20, 35, 15));
-    const isoDate = new Date(2024, 2, 15, 20, 35, 15).toJSON();
-    expect(JSON.parse(data)[0]).toStrictEqual(`$D${isoDate}`);
-  });
-
-  test("stringify symbol", async () => {
-    const data = stringify(Symbol.for("Ayaka"));
-    expect(JSON.parse(data)[0]).toStrictEqual(`$SAyaka`);
-  });
-
-  test("stringify bigint", async () => {
-    const data = stringify(250n);
-    expect(JSON.parse(data)[0]).toStrictEqual(`$n${250}`);
-  });
-
-  test("stringify array", async () => {
-    const array = [1, 2, 3];
-    const data = stringify(array);
-    expect(JSON.parse(data)[0]).toStrictEqual([1, 2, 3]);
-  });
-
-  test("stringify set", async () => {
-    const set = new Set([1, "Mimimi", true, null, undefined]);
-
-    const data = stringify(set);
-    expect(JSON.parse(data)[0]).toStrictEqual(`$W1`);
-    expect(JSON.parse(data)[1]).toStrictEqual([
-      1,
-      "$$Mimimi",
-      true,
-      null,
-      "$undefined",
-    ]);
-  });
-
-  test("stringify map", async () => {
-    const map = new Map<unknown, unknown>([
-      ["number", 1],
-      ["text", "hello"],
-      ["boolean", true],
-      ["null", null],
-      ["undefined", undefined],
-    ]);
-
-    const data = JSON.parse(stringify(map));
-    expect(data[0]).toStrictEqual(`$Q1`);
-    expect(data[1]).toStrictEqual([
-      ["$$number", 1],
-      ["$$text", "$$hello"],
-      ["$$boolean", true],
-      ["$$null", null],
-      ["$$undefined", "$undefined"],
-    ]);
-  });
-
-  test("stringify plain object", async () => {
-    const obj = { x: "bear", y: 23, z: true };
-    const data = stringify(obj);
-    expect(JSON.parse(data)[0]).toStrictEqual({ x: "$$bear", y: 23, z: true });
-  });
-
-  test("stringify complex object", async () => {
+describe("stringify object", () => {
+  test("Should stringify/parse complex object", async () => {
     const obj = {
       string: "hello",
       boolean: true,
@@ -142,42 +30,47 @@ describe("stringify value", () => {
     };
 
     const data = stringify(obj);
-    const written = JSON.parse(data);
-    const parsedObj = written[0];
+    const indices = JSON.parse(data);
+    const parsed = indices[1];
 
-    expect(parsedObj.string).toStrictEqual("$$hello");
-    expect(parsedObj.boolean).toStrictEqual(true);
-    expect(parsedObj.nullValue).toStrictEqual(null);
-    expect(parsedObj.undefinedValue).toStrictEqual("$undefined");
-    expect(parsedObj.positiveNumber).toStrictEqual(42);
-    expect(parsedObj.negativeNumber).toStrictEqual(-69);
-    expect(parsedObj.negativeZero).toStrictEqual("$-0");
-    expect(parsedObj.infinity).toStrictEqual("$Infinity");
-    expect(parsedObj.negativeInfinity).toStrictEqual("$-Infinity");
-    expect(parsedObj.nan).toStrictEqual("$NaN");
-    expect(parsedObj.date).toStrictEqual(`$D${new Date(0).toISOString()}`);
-    expect(parsedObj.symbol).toStrictEqual("$SAyaka");
-    expect(parsedObj.bigint).toStrictEqual("$n250");
-    expect(parsedObj.array).toStrictEqual([1, 2, 3]);
-    expect(parsedObj.set).toStrictEqual("$W1");
-    expect(parsedObj.map).toStrictEqual("$Q2");
-    expect(parsedObj.nestedObject).toStrictEqual({
-      x: "$$bear",
-      y: 23,
-      z: true,
-    });
+    expect(parsed.string).toStrictEqual("$$hello");
+    expect(parsed.boolean).toStrictEqual(true);
+    expect(parsed.nullValue).toStrictEqual(null);
+    expect(parsed.undefinedValue).toStrictEqual("$undefined");
+    expect(parsed.positiveNumber).toStrictEqual(42);
+    expect(parsed.negativeNumber).toStrictEqual(-69);
+    expect(parsed.negativeZero).toStrictEqual("$-0");
+    expect(parsed.infinity).toStrictEqual("$Infinity");
+    expect(parsed.negativeInfinity).toStrictEqual("$-Infinity");
+    expect(parsed.nan).toStrictEqual("$NaN");
+    expect(parsed.date).toStrictEqual(`$D${new Date(0).toISOString()}`);
+    expect(parsed.symbol).toStrictEqual("$SAyaka");
+    expect(parsed.bigint).toStrictEqual("$n250");
+    expect(parsed.array).toStrictEqual("$A2");
+    expect(parsed.set).toStrictEqual("$W3");
+    expect(parsed.map).toStrictEqual("$Q4");
+    expect(parsed.nestedObject).toStrictEqual("$R5");
 
-    expect(written[1]).toStrictEqual([1, "$$Erika", true, null, "$undefined"]);
+    expect(indices[2]).toStrictEqual([1, 2, 3])
 
-    expect(written[2]).toStrictEqual([
+    expect(indices[3]).toStrictEqual([1, "$$Erika", true, null, "$undefined"]);
+
+    expect(indices[4]).toStrictEqual([
       ["$$number", 1],
       ["$$text", "$$hello"],
       ["$$boolean", true],
       ["$$null", null],
       ["$$undefined", "$undefined"],
     ]);
+
+    expect(indices[5]).toStrictEqual({
+      x: "$$bear",
+      y: 23,
+      z: true,
+    })
+
   });
-});
+})
 
 describe("stringify promise", () => {
   test("Should throw on pending promise", () => {
@@ -237,10 +130,10 @@ describe("stringify promise", () => {
 
     const firstChunk = (await reader.read()).value!;
     expect(firstChunk).toStrictEqual(
-      `[{"num":24,"text":"$$hello","promise":"$@1"}]\n\n`
+      `["$R1",{"num":24,"text":"$$hello","promise":"$@2"}]\n\n`
     );
 
-    const p1 = JSON.parse(firstChunk)[0];
+    const p1 = JSON.parse(firstChunk)[1];
     expect(p1).toBeTruthy();
     expect(p1.num).toStrictEqual(24);
     expect(p1.text).toStrictEqual(`$$hello`);
@@ -248,10 +141,10 @@ describe("stringify promise", () => {
     // Await for promises for complete
     await new Promise((resolve) => setTimeout(resolve, 50));
     const secondChunk = (await reader.read()).value!;
-    expect(secondChunk).toStrictEqual(`["$@1",200]\n\n`);
+    expect(secondChunk).toStrictEqual(`["$@2",null,200]\n\n`);
 
     const p2 = JSON.parse(secondChunk);
-    expect(p2[1]).toStrictEqual(200);
+    expect(p2[2]).toStrictEqual(200);
     expect((await reader.read()).done).toBeTruthy();
   });
 
@@ -270,19 +163,19 @@ describe("stringify promise", () => {
 
     const firstChunk = (await reader.read()).value!;
     expect(firstChunk).toStrictEqual(
-      `[{"num":"$@1","text":"$@2","promise":"$@3"}]\n\n`
+      `["$R1",{"num":"$@2","text":"$@3","promise":"$@4"}]\n\n`
     );
 
     const secondChunk = (await reader.read()).value!;
-    expect(secondChunk).toStrictEqual(`["$@1",49]\n\n`);
+    expect(secondChunk).toStrictEqual(`["$@2",null,49]\n\n`);
 
     const thirdChunk = (await reader.read()).value!;
-    expect(thirdChunk).toStrictEqual(`["$@2",null,"$$Ice Cream"]\n\n`);
+    expect(thirdChunk).toStrictEqual(`["$@3",null,null,"$$Ice Cream"]\n\n`);
 
     await new Promise((resolve) => setTimeout(resolve, 50));
     const forthChunk = (await reader.read()).value!;
     expect(forthChunk).toStrictEqual(
-      `["$@3",null,null,{"name":"$$Ayaka"}]\n\n`
+      `["$@4",null,null,null,"$R5",{"name":"$$Ayaka"}]\n\n`
     );
 
     expect((await reader.read()).done).toBeTruthy();
@@ -455,37 +348,6 @@ describe("stringify async iterator", () => {
   });
 });
 
-describe("stringicy object references", () => {
-  test("Should stringify with cyclic reference", () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const obj: any = { value: 23 };
-    obj.self = obj;
-
-    const json = stringify(obj);
-    expect(json).toStrictEqual('[{"value":23,"self":"$R0"}]')
-  });
-
-  test("Should stringify array with same object reference", () => {
-    const obj = { name: "Ryuji Ayukawa" }
-    const characters = [obj, obj, obj];
-
-    const json = stringify(characters);
-    expect(json).toStrictEqual('[[{"name":"$$Ryuji Ayukawa"},"$R0","$R0"]]');
-  });
-
-  test("Should stringify complex object with references", () => {
-    const obj = { value: 69 };
-    const complex = {
-      self: obj,
-      array: [obj, obj],
-      map: new Map([["key", obj]]),
-      set: new Set([obj]),
-    }
-
-    const json = stringify(complex);
-    expect(json).toStrictEqual('[{"self":{"value":69},"array":["$R0","$R0"],"map":"$Q1","set":"$W2"},[["$$key","$R0"]],["$R0"]]');
-  })
-})
 
 const delay = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));

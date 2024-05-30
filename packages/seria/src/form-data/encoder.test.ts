@@ -72,7 +72,8 @@ describe("Encode value", () => {
     const array = [1, 2, 3];
 
     const value = await encodeAsync(array);
-    expect(value.get("0")).toStrictEqual(`[1,2,3]`);
+    expect(value.get("0")).toStrictEqual(`"$A1"`);
+    expect(value.get("1")).toStrictEqual(`[1,2,3]`);
   });
 
   test("Encode set", async () => {
@@ -105,7 +106,8 @@ describe("Encode value", () => {
     const obj = { x: "bear", y: 23, z: true };
 
     const value = await encodeAsync(obj);
-    expect(value.get("0")).toStrictEqual(`{"x":"$$bear","y":23,"z":true}`);
+    expect(value.get("0")).toStrictEqual('"$R1"');
+    expect(value.get("1")).toStrictEqual('{"x":"$$bear","y":23,"z":true}');
   });
 
   test("Encode promise", async () => {
@@ -152,7 +154,7 @@ describe("Encode buffers", () => {
   test("Encode ArrayBuffer", async () => {
     const buffer = new ArrayBuffer(8);
     const value = await encodeAsync(buffer);
-    expect(value.get("0")).toStrictEqual(`"$A1"`);
+    expect(value.get("0")).toStrictEqual(`"$B1"`);
   });
 
   test("Encode Int8Array", async () => {
@@ -234,7 +236,8 @@ describe("Encode sync", () => {
     const obj = { x: "bear", y: 23, z: true };
 
     const value = encode(obj);
-    expect(value.get("0")).toStrictEqual(`{"x":"$$bear","y":23,"z":true}`);
+    expect(value.get("0")).toStrictEqual('"$R1"');
+    expect(value.get("1")).toStrictEqual('{"x":"$$bear","y":23,"z":true}');
   });
 
   test("Should throw if value contains promise", () => {

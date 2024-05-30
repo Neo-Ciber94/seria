@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { serialize } from "v8";
 import { createChannel, type Sender } from "../channel";
 import { deferredPromise, type DeferredPromise } from "../deferredPromise";
 import { SeriaError } from "../error";
@@ -187,10 +186,9 @@ function internal_parse(value: string, opts?: Options) {
   const pendingChannels = new Map<number, Sender<unknown>>();
   const references = new Map<number, any>();
 
-  const { indices, base } = (function () {
+  const indices = (function () {
     try {
-      const indices = JSON.parse(value) as readonly unknown[];
-      return { indices, base: indices[0] };
+      return JSON.parse(value) as readonly unknown[];
     } catch {
       throw new SeriaError(`Failed to parse base value: ${value}`);
     }
@@ -384,20 +382,22 @@ function internal_parse(value: string, opts?: Options) {
       case "object": {
         if (input === null) {
           return null;
-        } else if (Array.isArray(input)) {
-          const arr: any[] = [];
-          for (const item of input) {
-            arr.push(deserialize(item));
-          }
-          return arr;
-        } else if (isPlainObject(input)) {
-          const obj: Record<string, unknown> = {};
-          for (const [key, value] of Object.entries(input)) {
-            obj[key] = deserialize(value);
-          }
+        }
+        // else if (Array.isArray(input)) {
+        //   const arr: any[] = [];
+        //   for (const item of input) {
+        //     arr.push(deserialize(item));
+        //   }
+        //   return arr;
+        // } else if (isPlainObject(input)) {
+        //   const obj: Record<string, unknown> = {};
+        //   for (const [key, value] of Object.entries(input)) {
+        //     obj[key] = deserialize(value);
+        //   }
 
-          return obj;
-        } else {
+        //   return obj;
+        // }
+        else {
           throw new SeriaError(`Invalid object value: ${JSON.stringify(input)}`);
         }
       }
@@ -406,7 +406,7 @@ function internal_parse(value: string, opts?: Options) {
     }
   };
 
-  const data = deserialize(base);
+  const data = deserialize(indices[0]);
   return { data, pendingPromises, pendingChannels };
 }
 

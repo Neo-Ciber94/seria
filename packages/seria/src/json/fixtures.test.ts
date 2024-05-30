@@ -194,6 +194,33 @@ describe("Basic stringify/parse", () => {
         expect(value).toStrictEqual({ x: "bear", y: 23, z: true });
     });
 
+    test("Parse complex", async () => {
+        const obj = {
+            str: "hello",
+            num: 42,
+            null: null,
+            undefined: undefined,
+            truthty: true,
+            set: new Set([1, "set", true]),
+            map: new Map([["key", "value"]]),
+            obj: { x: 1, y: "world", z: false },
+            promise: Promise.resolve("adios amigos"),
+        };
+
+        const json = await stringifyAsync(obj);
+        const value: any = parse(json);
+
+        expect(value.str).toStrictEqual("hello");
+        expect(value.num).toStrictEqual(42);
+        expect(value.truthty).toStrictEqual(true);
+        expect(value.null).toStrictEqual(null);
+        expect(value.undefined).toStrictEqual(undefined);
+        expect(value.set).toEqual(new Set([1, "set", true]));
+        expect(value.map).toEqual(new Map([["key", "value"]]));
+        expect(value.obj).toStrictEqual({ x: 1, y: "world", z: false });
+        await expect(value.promise).resolves.toStrictEqual("adios amigos");
+    });
+
     test("Should stringify/parse String object", () => {
         const json = stringify(new String("hola"));
         expect(json).toStrictEqual('["$$hola"]')
@@ -227,16 +254,3 @@ describe("Basic stringify/parse", () => {
         expect(value).toStrictEqual(arrayWithSameReference);
     });
 });
-
-describe("Promises", () => {
-
-    test("Parse resolved Promise", async () => {
-        const encoded = await stringifyAsync(Promise.resolve("adios amigos"));
-        const decoded = parse(encoded);
-        await expect(decoded).resolves.toStrictEqual("adios amigos");
-    });
-})
-
-// describe("Streams", () => {
-
-// })

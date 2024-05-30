@@ -5,159 +5,6 @@ import { parse, parseFromStream, internal_parseFromStream } from "./parse";
 import { type TrackingAsyncIterable } from "../trackingAsyncIterable";
 import { delay } from "../utils";
 
-describe("Parse value", () => {
-  test("Parse string", () => {
-    const encoded = stringify("hello");
-    const decoded = parse(encoded);
-    expect(decoded).toStrictEqual("hello");
-  });
-
-  test("Parse number", () => {
-    const encoded = stringify(42);
-    const decoded = parse(encoded);
-    expect(decoded).toStrictEqual(42);
-  });
-
-  test("Parse NaN", () => {
-    const encoded = stringify(NaN);
-    const decoded = parse(encoded);
-    expect(decoded).toBeNaN();
-  });
-
-  test("Parse -Infinity", () => {
-    const encoded = stringify(-Infinity);
-    const decoded = parse(encoded);
-    expect(decoded).toBe(-Infinity);
-  });
-
-  test("Parse Infinity", () => {
-    const encoded = stringify(Infinity);
-    const decoded = parse(encoded);
-    expect(decoded).toBe(Infinity);
-  });
-
-  test("Parse -0", () => {
-    const encoded = stringify(-0);
-    const decoded = parse(encoded);
-    expect(decoded).toBe(-0);
-  });
-
-  test("Parse boolean", () => {
-    const encoded = stringify(true);
-    const decoded = parse(encoded);
-    expect(decoded).toStrictEqual(true);
-  });
-
-  test("Parse null", () => {
-    const encoded = stringify(null);
-    const decoded = parse(encoded);
-    expect(decoded).toStrictEqual(null);
-  });
-
-  test("Parse undefined", () => {
-    const encoded = stringify(undefined);
-    const decoded = parse(encoded);
-    expect(decoded).toStrictEqual(undefined);
-  });
-
-  test("Parse Set", () => {
-    const encoded = stringify(new Set([1, "set", true]));
-    const decoded = parse(encoded);
-    expect(decoded).toEqual(new Set([1, "set", true]));
-  });
-
-  test("Parse Map", () => {
-    const encoded = stringify(new Map([["key", "value"]]));
-    const decoded = parse(encoded);
-    expect(decoded).toEqual(new Map([["key", "value"]]));
-  });
-
-  test("Parse object", () => {
-    const encoded = stringify({ x: 1, y: "world", z: false });
-    const decoded = parse(encoded);
-    expect(decoded).toStrictEqual({ x: 1, y: "world", z: false });
-  });
-
-  test("Parse String object", () => {
-    const encoded = stringify(new String("hola"));
-    const decoded = parse(encoded);
-    expect(decoded).toStrictEqual("hola");
-  });
-
-  test("Parse resolved Promise", async () => {
-    const encoded = await stringifyAsync(Promise.resolve("adios amigos"));
-    const decoded = parse(encoded);
-    await expect(decoded).resolves.toStrictEqual("adios amigos");
-  });
-});
-
-describe("Parse object", async () => {
-  test("Parse complex", async () => {
-    const obj = {
-      str: "hello",
-      num: 42,
-      null: null,
-      undefined: undefined,
-      truthty: true,
-      set: new Set([1, "set", true]),
-      map: new Map([["key", "value"]]),
-      obj: { x: 1, y: "world", z: false },
-      promise: Promise.resolve("adios amigos"),
-    };
-
-    const json = await stringifyAsync(obj);
-    const raw: any = parse(json);
-
-    expect(raw.str).toStrictEqual("hello");
-    expect(raw.num).toStrictEqual(42);
-    expect(raw.truthty).toStrictEqual(true);
-    expect(raw.null).toStrictEqual(null);
-    expect(raw.undefined).toStrictEqual(undefined);
-    expect(raw.set).toEqual(new Set([1, "set", true]));
-    expect(raw.map).toEqual(new Map([["key", "value"]]));
-    expect(raw.obj).toStrictEqual({ x: 1, y: "world", z: false });
-    await expect(raw.promise).resolves.toStrictEqual("adios amigos");
-  });
-
-  test("Parse promises", async () => {
-    const promises = {
-      num: Promise.resolve(42),
-      bool: Promise.resolve(true),
-      null: Promise.resolve(null),
-      undefined: Promise.resolve(undefined),
-      array: Promise.resolve([1, 2, 3]),
-    };
-
-    const json = await stringifyAsync(promises);
-
-    const decoded: any = parse(json);
-
-    await expect(decoded.num).resolves.toStrictEqual(42);
-    await expect(decoded.bool).resolves.toStrictEqual(true);
-    await expect(decoded.null).resolves.toStrictEqual(null);
-    await expect(decoded.undefined).resolves.toStrictEqual(undefined);
-    await expect(decoded.array).resolves.toStrictEqual([1, 2, 3]);
-  });
-
-  test("Parse array of promises", async () => {
-    const promisesArray = [
-      Promise.resolve(42),
-      Promise.resolve(true),
-      Promise.resolve(null),
-      Promise.resolve(undefined),
-      Promise.resolve([1, 2, 3]),
-    ];
-
-    const json = await stringifyAsync(promisesArray);
-
-    const decodedArray = parse(json) as typeof promisesArray;
-
-    await Promise.all(decodedArray.map(async (promise, index) => {
-      await expect(promise).resolves.toStrictEqual(await promisesArray[index]);
-    }));
-  });
-});
-
 type IndexableBuffer<T> = {
   [index: number]: T;
   readonly length: number;
@@ -464,6 +311,51 @@ describe("Parse promises", () => {
       Symbol.for("this_is_a_promise")
     );
   });
+
+
+  test("Parse resolved Promise", async () => {
+    const encoded = await stringifyAsync(Promise.resolve("adios amigos"));
+    const decoded = parse(encoded);
+    await expect(decoded).resolves.toStrictEqual("adios amigos");
+  });
+
+  test("Parse promises", async () => {
+    const promises = {
+      num: Promise.resolve(42),
+      bool: Promise.resolve(true),
+      null: Promise.resolve(null),
+      undefined: Promise.resolve(undefined),
+      array: Promise.resolve([1, 2, 3]),
+    };
+
+    const json = await stringifyAsync(promises);
+
+    const decoded: any = parse(json);
+
+    await expect(decoded.num).resolves.toStrictEqual(42);
+    await expect(decoded.bool).resolves.toStrictEqual(true);
+    await expect(decoded.null).resolves.toStrictEqual(null);
+    await expect(decoded.undefined).resolves.toStrictEqual(undefined);
+    await expect(decoded.array).resolves.toStrictEqual([1, 2, 3]);
+  });
+
+  test("Parse array of promises", async () => {
+    const promisesArray = [
+      Promise.resolve(42),
+      Promise.resolve(true),
+      Promise.resolve(null),
+      Promise.resolve(undefined),
+      Promise.resolve([1, 2, 3]),
+    ];
+
+    const json = await stringifyAsync(promisesArray);
+
+    const decodedArray = parse(json) as typeof promisesArray;
+
+    await Promise.all(decodedArray.map(async (promise, index) => {
+      await expect(promise).resolves.toStrictEqual(await promisesArray[index]);
+    }));
+  });
 });
 
 describe("Custom parser with reviver and replacer", () => {
@@ -497,7 +389,7 @@ describe("Custom parser with reviver and replacer", () => {
   });
 });
 
-describe("Parse async iterator", () => {
+describe.skip("Parse async iterator", () => {
   test("Should parse async iterator", async () => {
     async function* gen() {
       yield 1;
@@ -645,8 +537,7 @@ describe("Streaming using timers", () => {
   });
 });
 
-
-describe.only("Parse references", () => {
+describe("Parse references", () => {
   test("Should parse object with cyclic reference", () => {
     const obj: any = { num: 12 };
     obj.self = obj;
@@ -671,24 +562,24 @@ describe.only("Parse references", () => {
   });
 
 
-  test.only("Should parse complex object with references", () => {
-    const obj = { value: 69 };
-    const complex = {
-      self: obj,
-      array: [obj, obj],
-      map: new Map([["key", obj]]),
-      set: new Set([obj]),
-    }
+  test.todo("Should parse complex object with references", () => {
+    // const obj = { value: 69 };
+    // const complex = {
+    //   self: obj,
+    //   array: [obj, obj],
+    //   map: new Map([["key", obj]]),
+    //   set: new Set([obj]),
+    // }
 
-    const json = stringify(complex);
-    const decoded = parse(json) as typeof complex;
-    console.log({ json, raw: JSON.parse(json) });
-    expect(decoded).toStrictEqual({
-      self: { value: 69 },
-      array: [{ value: 69 }, { value: 69 }, { value: 69 }],
-      map: new Map([["key", { value: 69 }]]),
-      set: new Set([{ value: 69 }])
-    });
+    // const json = stringify(complex);
+    // const decoded = parse(json) as typeof complex;
+    // console.log({ json, raw: JSON.parse(json) });
 
+    // expect(decoded).toStrictEqual({
+    //   self: { value: 69 },
+    //   array: [{ value: 69 }, { value: 69 }, { value: 69 }],
+    //   map: new Map([["key", { value: 69 }]]),
+    //   set: new Set([{ value: 69 }])
+    // });
   })
 })

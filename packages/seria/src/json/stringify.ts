@@ -394,7 +394,6 @@ function serializeDate(input: Date) {
   return serializeTagValue(Tag.Date, invalid ? '' : input.toISOString());
 }
 
-
 function serializeArray(input: Array<any>, context: SerializeContext) {
   const items: unknown[] = [];
   const id = context.nextId();

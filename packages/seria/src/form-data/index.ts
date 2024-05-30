@@ -120,6 +120,7 @@ export function decode(
 ): unknown {
   const { types } = opts || {};
   const { FormData: FormDataConstructor = globalThis.FormData } = types || {};
+  const references = new Map<string, any>();
 
   const value = (function () {
     const entry = encoded.get("0");
@@ -188,23 +189,51 @@ export function decode(
             case maybeTag === Tag.NaN_: {
               return NaN;
             }
+            case maybeTag[0] === Tag.Object: {
+              const id = input.slice(2);
+              if (references.has(id)) {
+                return references.get(id)
+              }
+
+              const raw = encoded.get(id);
+              const value = JSON.parse(String(raw)); // This is stored as an Array<string>
+              const obj: Record<string, unknown> = {};
+              references.set(id, obj);
+
+              if (isPlainObject(value)) {
+                for (const [k, v] of Object.entries(value)) {
+                  obj[k] = deserialize(v);
+                }
+              }
+
+              return obj;
+            }
+            case maybeTag[0] === Tag.Array: {
+              const id = input.slice(2);
+              const arr: any[] = [];
+              const raw = encoded.get(id);
+              const values = JSON.parse(String(raw)); // This is stored as an Array<string>
+
+              if (Array.isArray(values)) {
+                for (const item of values) {
+                  arr.push(deserialize(item));
+                }
+              }
+
+              return arr;
+            }
             case maybeTag[0] === Tag.Set: {
               const id = input.slice(2);
               const set = new Set<any>();
 
-              try {
-                const values = encoded.get(id);
-                if (values) {
-                  const data = JSON.parse(String(values)); // This is stored as an Array<string>
-                  if (Array.isArray(data)) {
-                    for (const item of data) {
-                      set.add(deserialize(item));
-                    }
+              const values = encoded.get(id);
+              if (values) {
+                const data = JSON.parse(String(values)); // This is stored as an Array<string>
+                if (Array.isArray(data)) {
+                  for (const item of data) {
+                    set.add(deserialize(item));
                   }
                 }
-              } catch (err) {
-                // failed to parse
-                console.error(err);
               }
 
               return set;
@@ -213,21 +242,16 @@ export function decode(
               const id = input.slice(2);
               const map = new Map<any, any>();
 
-              try {
-                const values = encoded.get(id);
-                if (values) {
-                  const data = JSON.parse(String(values)); // This is stored as an Array<[string, string]>
-                  if (Array.isArray(data)) {
-                    for (const [key, value] of data) {
-                      const decodedKey = deserialize(key);
-                      const decodedValue = deserialize(value);
-                      map.set(decodedKey, decodedValue);
-                    }
+              const values = encoded.get(id);
+              if (values) {
+                const data = JSON.parse(String(values)); // This is stored as an Array<[string, string]>
+                if (Array.isArray(data)) {
+                  for (const [key, value] of data) {
+                    const decodedKey = deserialize(key);
+                    const decodedValue = deserialize(value);
+                    map.set(decodedKey, decodedValue);
                   }
                 }
-              } catch (err) {
-                // failed to parse
-                console.error(err);
               }
 
               return map;
@@ -320,21 +344,23 @@ export function decode(
       case "object": {
         if (input === null) {
           return null;
-        } else if (Array.isArray(input)) {
-          const arr: any[] = [];
-          for (const item of input) {
-            arr.push(deserialize(item));
-          }
-          return arr;
-        } else if (isPlainObject(input)) {
-          const obj: Record<string, unknown> = {};
+        }
+        // else if (Array.isArray(input)) {
+        //   const arr: any[] = [];
+        //   for (const item of input) {
+        //     arr.push(deserialize(item));
+        //   }
+        //   return arr;
+        // } else if (isPlainObject(input)) {
+        //   const obj: Record<string, unknown> = {};
 
-          for (const [key, value] of Object.entries(input)) {
-            obj[key] = deserialize(value);
-          }
+        //   for (const [key, value] of Object.entries(input)) {
+        //     obj[key] = deserialize(value);
+        //   }
 
-          return obj;
-        } else {
+        //   return obj;
+        // } 
+        else {
           throw new SeriaError(`Invalid object value: ${JSON.stringify(input)}`);
         }
       }
