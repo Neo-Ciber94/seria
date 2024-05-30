@@ -345,21 +345,6 @@ export function decode(
         if (input === null) {
           return null;
         }
-        // else if (Array.isArray(input)) {
-        //   const arr: any[] = [];
-        //   for (const item of input) {
-        //     arr.push(deserialize(item));
-        //   }
-        //   return arr;
-        // } else if (isPlainObject(input)) {
-        //   const obj: Record<string, unknown> = {};
-
-        //   for (const [key, value] of Object.entries(input)) {
-        //     obj[key] = deserialize(value);
-        //   }
-
-        //   return obj;
-        // } 
         else {
           throw new SeriaError(`Invalid object value: ${JSON.stringify(input)}`);
         }

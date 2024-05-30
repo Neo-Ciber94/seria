@@ -249,31 +249,35 @@ function internal_parse(value: string, opts?: Options) {
             }
             case maybeTag[0] === Tag.Set: {
               const id = parseTagId(input.slice(2));
-              const set = new Set<any>();
               const values = indices[id];
 
               if (values && Array.isArray(values)) {
+                const set = new Set<any>();
+
                 for (const item of values) {
                   set.add(deserialize(item));
                 }
+                return set;
               }
 
-              return set;
+              return undefined;
             }
             case maybeTag[0] === Tag.Map: {
               const id = parseTagId(input.slice(2));
-              const map = new Map<any, any>();
               const values = indices[id];
 
               if (values && Array.isArray(values)) {
+                const map = new Map<any, any>();
+
                 for (const [key, value] of values) {
                   const decodedKey = deserialize(key);
                   const decodedValue = deserialize(value);
                   map.set(decodedKey, decodedValue);
                 }
+                return map;
               }
 
-              return map;
+              return undefined;
             }
             case maybeTag[0] === Tag.Object: {
               const id = parseTagId(input.slice(2));
@@ -282,29 +286,33 @@ function internal_parse(value: string, opts?: Options) {
               }
 
               const value = indices[id];
-              const obj: Record<string, unknown> = {};
-              references.set(id, obj);
 
               if (isPlainObject(value)) {
+                const obj: Record<string, unknown> = {};
+                references.set(id, obj);
                 for (const [k, v] of Object.entries(value)) {
                   obj[k] = deserialize(v);
                 }
+                return obj;
               }
 
-              return obj;
+              return undefined;
             }
             case maybeTag[0] === Tag.Array: {
               const id = parseTagId(input.slice(2));
-              const arr: any[] = [];
               const values = indices[id];
 
               if (Array.isArray(values)) {
+                const arr: any[] = [];
+
                 for (const item of values) {
                   arr.push(deserialize(item));
                 }
+
+                return arr;
               }
 
-              return arr;
+              return undefined;
             }
             case maybeTag[0] === Tag.Promise: {
               const id = parseTagId(input.slice(2));
@@ -383,20 +391,6 @@ function internal_parse(value: string, opts?: Options) {
         if (input === null) {
           return null;
         }
-        // else if (Array.isArray(input)) {
-        //   const arr: any[] = [];
-        //   for (const item of input) {
-        //     arr.push(deserialize(item));
-        //   }
-        //   return arr;
-        // } else if (isPlainObject(input)) {
-        //   const obj: Record<string, unknown> = {};
-        //   for (const [key, value] of Object.entries(input)) {
-        //     obj[key] = deserialize(value);
-        //   }
-
-        //   return obj;
-        // }
         else {
           throw new SeriaError(`Invalid object value: ${JSON.stringify(input)}`);
         }
