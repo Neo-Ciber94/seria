@@ -219,169 +219,150 @@ function internal_parse(value: string, opts?: Options) {
             return reviver(val);
           }
 
-          switch (true) {
-            case maybeTag[0] === Tag.String: {
-              return input.slice(2);
-            }
-            case maybeTag[0] === Tag.Symbol: {
-              return Symbol.for(input.slice(2));
-            }
-            case maybeTag[0] === Tag.Date: {
-              return new Date(input.slice(2));
-            }
-            case maybeTag[0] === Tag.BigInt: {
-              return BigInt(input.slice(2));
-            }
-            case maybeTag === Tag.Undefined: {
-              return undefined;
-            }
-            case maybeTag === Tag.Infinity_: {
-              return Infinity;
-            }
-            case maybeTag === Tag.NegativeInfinity: {
-              return -Infinity;
-            }
-            case maybeTag === Tag.NegativeZero: {
-              return -0;
-            }
-            case maybeTag === Tag.NaN_: {
-              return NaN;
-            }
-            case maybeTag[0] === Tag.Set: {
-              const id = parseTagId(input.slice(2));
-              const values = indices[id];
+          if (maybeTag[0] === Tag.String) {
+            return input.slice(2);
+          } else if (maybeTag[0] === Tag.Symbol) {
+            return Symbol.for(input.slice(2));
+          } else if (maybeTag[0] === Tag.Date) {
+            return new Date(input.slice(2));
+          } else if (maybeTag[0] === Tag.BigInt) {
+            return BigInt(input.slice(2));
+          } else if (maybeTag === Tag.Undefined) {
+            return undefined;
+          } else if (maybeTag === Tag.Infinity_) {
+            return Infinity;
+          } else if (maybeTag === Tag.NegativeInfinity) {
+            return -Infinity;
+          } else if (maybeTag === Tag.NegativeZero) {
+            return -0;
+          } else if (maybeTag === Tag.NaN_) {
+            return NaN;
+          } else if (maybeTag[0] === Tag.Set) {
+            const id = parseTagId(input.slice(2));
+            const values = indices[id];
 
-              if (values && Array.isArray(values)) {
-                const set = new Set<any>();
+            if (values && Array.isArray(values)) {
+              const set = new Set<any>();
 
+              for (const item of values) {
+                set.add(deserialize(item));
+              }
+              return set;
+            }
+
+            return undefined;
+          } else if (maybeTag[0] === Tag.Map) {
+            const id = parseTagId(input.slice(2));
+            const values = indices[id];
+
+            if (values && Array.isArray(values)) {
+              const map = new Map<any, any>();
+
+              for (const [key, value] of values) {
+                const decodedKey = deserialize(key);
+                const decodedValue = deserialize(value);
+                map.set(decodedKey, decodedValue);
+              }
+              return map;
+            }
+
+            return undefined;
+          } else if (maybeTag[0] === Tag.Object) {
+            const id = parseTagId(input.slice(2));
+            if (references.has(id)) {
+              return references.get(id)
+            }
+
+            const value = indices[id];
+
+            if (isPlainObject(value)) {
+              const obj: Record<string, unknown> = {};
+              references.set(id, obj);
+              for (const [k, v] of Object.entries(value)) {
+                obj[k] = deserialize(v);
+              }
+              return obj;
+            }
+
+            return undefined;
+          } else if (maybeTag[0] === Tag.Array) {
+            const id = parseTagId(input.slice(2));
+            const values = indices[id];
+
+            if (Array.isArray(values)) {
+              const arr: any[] = [];
+
+              for (const item of values) {
+                arr.push(deserialize(item));
+              }
+
+              return arr;
+            }
+
+            return undefined;
+          } else if (maybeTag[0] === Tag.Promise) {
+            const id = parseTagId(input.slice(2));
+            const rawValue = indices[id];
+
+            if (rawValue === undefined) {
+              if (deferPromises) {
+                const deferred = deferredPromise();
+                pendingPromises.set(id, deferred);
+                return deferred.promise;
+              }
+
+              throw new SeriaError("Failed to find promise resolved value");
+            }
+
+            try {
+              const resolvedValue = deserialize(rawValue);
+              return trackPromise(id, Promise.resolve(resolvedValue));
+            } catch {
+              throw new SeriaError("Unable to resolve promise value");
+            }
+          } else if (maybeTag[0] === Tag.AsyncIterator) {
+            const id = parseTagId(input.slice(2));
+            const asyncIteratorValues = indices[id];
+
+            if (!asyncIteratorValues) {
+              const [sender, receiver] = createChannel({ id });
+              pendingChannels.set(id, sender);
+              return receiver;
+            }
+
+            if (Array.isArray(asyncIteratorValues)) {
+              const length = asyncIteratorValues.length - 1;
+              const isDone = asyncIteratorValues[length] === "done";
+
+              const values = isDone
+                ? asyncIteratorValues.slice(0, -1)
+                : asyncIteratorValues;
+
+              const generator = (async function* () {
                 for (const item of values) {
-                  set.add(deserialize(item));
+                  const resolvedValue = deserialize(item);
+                  yield resolvedValue;
                 }
-                return set;
-              }
+              })();
 
-              return undefined;
+              const trackedAsyncIterator = trackAsyncIterable(
+                id,
+                generator,
+                isDone ? "done" : undefined
+              );
+
+              return trackedAsyncIterator;
+            } else {
+              throw new SeriaError(
+                "Failed to parse async iterator, expected array of values"
+              );
             }
-            case maybeTag[0] === Tag.Map: {
-              const id = parseTagId(input.slice(2));
-              const values = indices[id];
-
-              if (values && Array.isArray(values)) {
-                const map = new Map<any, any>();
-
-                for (const [key, value] of values) {
-                  const decodedKey = deserialize(key);
-                  const decodedValue = deserialize(value);
-                  map.set(decodedKey, decodedValue);
-                }
-                return map;
-              }
-
-              return undefined;
-            }
-            case maybeTag[0] === Tag.Object: {
-              const id = parseTagId(input.slice(2));
-              if (references.has(id)) {
-                return references.get(id)
-              }
-
-              const value = indices[id];
-
-              if (isPlainObject(value)) {
-                const obj: Record<string, unknown> = {};
-                references.set(id, obj);
-                for (const [k, v] of Object.entries(value)) {
-                  obj[k] = deserialize(v);
-                }
-                return obj;
-              }
-
-              return undefined;
-            }
-            case maybeTag[0] === Tag.Array: {
-              const id = parseTagId(input.slice(2));
-              const values = indices[id];
-
-              if (Array.isArray(values)) {
-                const arr: any[] = [];
-
-                for (const item of values) {
-                  arr.push(deserialize(item));
-                }
-
-                return arr;
-              }
-
-              return undefined;
-            }
-            case maybeTag[0] === Tag.Promise: {
-              const id = parseTagId(input.slice(2));
-              const rawValue = indices[id];
-
-              if (rawValue === undefined) {
-                if (deferPromises) {
-                  const deferred = deferredPromise();
-                  pendingPromises.set(id, deferred);
-                  return deferred.promise;
-                }
-
-                throw new SeriaError("Failed to find promise resolved value");
-              }
-
-              try {
-                const resolvedValue = deserialize(rawValue);
-                return trackPromise(id, Promise.resolve(resolvedValue));
-              } catch {
-                throw new SeriaError("Unable to resolve promise value");
-              }
-            }
-            case maybeTag[0] === Tag.AsyncIterator: {
-              const id = parseTagId(input.slice(2));
-              const asyncIteratorValues = indices[id];
-
-              if (!asyncIteratorValues) {
-                const [sender, receiver] = createChannel({ id });
-                pendingChannels.set(id, sender);
-                return receiver;
-              }
-
-              if (Array.isArray(asyncIteratorValues)) {
-                const length = asyncIteratorValues.length - 1;
-                const isDone = asyncIteratorValues[length] === "done";
-
-                const values = isDone
-                  ? asyncIteratorValues.slice(0, -1)
-                  : asyncIteratorValues;
-
-                const generator = (async function* () {
-                  for (const item of values) {
-                    const resolvedValue = deserialize(item);
-                    yield resolvedValue;
-                  }
-                })();
-
-                const trackedAsyncIterator = trackAsyncIterable(
-                  id,
-                  generator,
-                  isDone ? "done" : undefined
-                );
-
-                return trackedAsyncIterator;
-              } else {
-                throw new SeriaError(
-                  "Failed to parse async iterator, expected array of values"
-                );
-              }
-            }
-            case isTypedArrayTag(maybeTag[0]): {
-              return deserializeBuffer(maybeTag[0], input, {
-                references: indices,
-              });
-            }
-            default:
-              {
-                throw new SeriaError(`Unknown value: ${input}`);
-              }
+          } else if (isTypedArrayTag(maybeTag[0])) {
+            return deserializeBuffer(maybeTag[0], input, {
+              references: indices,
+            });
+          } else {
+            throw new SeriaError(`Unknown value: ${input}`);
           }
         } else {
           throw new SeriaError(`Invalid reference value: ${input}`);
