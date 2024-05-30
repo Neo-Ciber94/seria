@@ -68,17 +68,17 @@ export function stringify(
 /**
  * Converts a value to a json string and resolve all its promises.
  * @param value The value to convert.
- * @param replacer A function that encode a custom value.
+ * @param replacers A function that encode a custom value.
  * @param space Adds indentation, white space to the json values line-breaks.
  * @returns The json string.
  */
 export async function stringifyAsync(
   value: unknown,
-  replacer?: Replacers | null,
+  replacers?: Replacers | null,
   space?: number | string
 ) {
   const result = internal_serialize(value, {
-    replacers: replacer,
+    replacers,
     space,
   });
 
@@ -191,7 +191,7 @@ export function internal_serialize(
   value: unknown,
   opts: SerializeOptions
 ) {
-  const { replacers: replacer, space, initialID = 1, formData } = opts;
+  const { replacers, space, initialID = 1, formData } = opts;
   const serializedValues = new Map<number, unknown>();
   const referencesMap = new Map<object, Reference>();
   const pendingPromisesMap = new Map<number, TrackingPromise<any>>();
@@ -225,8 +225,8 @@ export function internal_serialize(
 
   function serialize(input: any) {
     // Custom serializer
-    if (replacer) {
-      for (const [key, fn] of Object.entries(replacer)) {
+    if (replacers) {
+      for (const [key, fn] of Object.entries(replacers)) {
         const val = fn(input, context);
         if (val !== undefined) {
           const id = context.nextId();
@@ -511,7 +511,6 @@ function serializeAsyncIterable(
     }
   }
 
-  // ["#1",[1,false,"$R2","done"],{"x":2}]
   const generator = (async function* () {
     for await (const item of resolveAsyncIterable(input)) {
       const ret = context.serialize(item);
@@ -520,7 +519,7 @@ function serializeAsyncIterable(
       const items = [...((context.output[id] as any[]) || []), ret];
       context.serializedValues.set(id, items);
       context.checkSerialized();
-      yield ret;
+      yield item;
     }
 
     // Notify is done

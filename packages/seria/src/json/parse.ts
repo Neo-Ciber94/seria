@@ -81,7 +81,7 @@ export async function parseFromStream(
  */
 export function internal_parseFromStream(
   stream: ReadableStream<string>,
-  reviver?: Revivers
+  revivers?: Revivers
 ) {
   const promisesMap = new Map<number, DeferredPromise<unknown>>();
   const channelsMap = new Map<number, Sender<unknown>>();
@@ -94,7 +94,7 @@ export function internal_parseFromStream(
           jsonChunk,
           {
             deferPromises: true,
-            revivers: reviver,
+            revivers,
           }
         );
 
