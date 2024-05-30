@@ -511,6 +511,7 @@ function serializeAsyncIterable(
     }
   }
 
+  // ["#1",[1,false,"$R2","done"],{"x":2}]
   const generator = (async function* () {
     for await (const item of resolveAsyncIterable(input)) {
       const ret = context.serialize(item);

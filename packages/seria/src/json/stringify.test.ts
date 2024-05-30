@@ -288,12 +288,14 @@ describe("stringify async iterator", () => {
   test("Should stringify an async iterator to stream", async () => {
     const gen = async function* () {
       yield 1;
-      yield 2;
+      yield false;
 
       await delay(100);
-      yield Promise.resolve(3);
+      yield Promise.resolve([1, 2, 3]);
     };
 
+    const val = await stringifyAsync(gen());
+    console.log({ val })
     const reader = stringifyToStream(gen()).getReader();
     const chunk_1 = (await reader.read())?.value;
     const chunk_2 = (await reader.read())?.value;
@@ -303,8 +305,8 @@ describe("stringify async iterator", () => {
 
     expect(chunk_1).toStrictEqual(`["$#1"]\n\n`);
     expect(chunk_2).toStrictEqual(`["$#1",[1]]\n\n`);
-    expect(chunk_3).toStrictEqual(`["$#1",[2]]\n\n`);
-    expect(chunk_4).toStrictEqual(`["$#1",[3]]\n\n`);
+    expect(chunk_3).toStrictEqual(`["$#1",[false]]\n\n`);
+    expect(chunk_4).toStrictEqual(`["$#1",["$A2"],[1,2,3]]\n\n`);
     expect(chunk_5).toStrictEqual(`["$#1",["done"]]\n\n`);
 
     expect((await reader.read())?.done).toBeTruthy();
