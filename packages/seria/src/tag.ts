@@ -19,16 +19,15 @@ export const enum Tag {
   NegativeInfinity = "-Infinity",
   NegativeZero = "-0",
   NaN_ = "NaN",
-
-  // Object reference
-  Reference = "R",
+  Object = "R",
+  Array = "A",
 
   // Others
   File = "k",
   AsyncIterator = "#",
 
   // TypedArray
-  ArrayBuffer = "A",
+  ArrayBuffer = "B",
   Int8Array = "C",
   Uint8Array = "c",
   Uint8ClampedArray = "U",

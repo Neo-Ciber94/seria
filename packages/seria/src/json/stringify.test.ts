@@ -167,7 +167,6 @@ describe("stringify value", () => {
       z: true,
     });
 
-    // references
     expect(written[1]).toStrictEqual([1, "$$Erika", true, null, "$undefined"]);
 
     expect(written[2]).toStrictEqual([
@@ -455,6 +454,38 @@ describe("stringify async iterator", () => {
     expect((await reader.read())?.done).toBeTruthy();
   });
 });
+
+describe("stringicy object references", () => {
+  test("Should stringify with cyclic reference", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const obj: any = { value: 23 };
+    obj.self = obj;
+
+    const json = stringify(obj);
+    expect(json).toStrictEqual('[{"value":23,"self":"$R0"}]')
+  });
+
+  test("Should stringify array with same object reference", () => {
+    const obj = { name: "Ryuji Ayukawa" }
+    const characters = [obj, obj, obj];
+
+    const json = stringify(characters);
+    expect(json).toStrictEqual('[[{"name":"$$Ryuji Ayukawa"},"$R0","$R0"]]');
+  });
+
+  test("Should stringify complex object with references", () => {
+    const obj = { value: 69 };
+    const complex = {
+      self: obj,
+      array: [obj, obj],
+      map: new Map([["key", obj]]),
+      set: new Set([obj]),
+    }
+
+    const json = stringify(complex);
+    expect(json).toStrictEqual('[{"self":{"value":69},"array":["$R0","$R0"],"map":"$Q1","set":"$W2"},[["$$key","$R0"]],["$R0"]]');
+  })
+})
 
 const delay = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));

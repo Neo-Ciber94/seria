@@ -84,29 +84,6 @@ describe("Parse value", () => {
     expect(decoded).toStrictEqual("hola");
   });
 
-  test("Parse circular object", () => {
-    const obj: any = { num: 12 };
-    obj.x = obj;
-
-    const encoded = stringify(obj);
-    const decoded = parse(encoded) as any;
-
-    expect(decoded.num).toStrictEqual(12);
-    expect(decoded.x).toBeTruthy();
-  });
-
-  test("Parse array with same reference", () => {
-    const obj = { text: 'hello' };
-    const arr = [obj, obj, obj]
-
-    const encoded = stringify(arr);
-    const decoded = parse(encoded) as any;
-
-    expect(decoded).toStrictEqual([{ text: 'hello' }, { text: 'hello' }, { text: 'hello' }]);
-    expect(decoded[0]).toBe(decoded[1])
-    expect(decoded[1]).toBe(decoded[2])
-  });
-
   test("Parse resolved Promise", async () => {
     const encoded = await stringifyAsync(Promise.resolve("adios amigos"));
     const decoded = parse(encoded);
@@ -162,7 +139,23 @@ describe("Parse object", async () => {
     await expect(decoded.array).resolves.toStrictEqual([1, 2, 3]);
   });
 
-  test("Parse array of promises", async () => { });
+  test("Parse array of promises", async () => {
+    const promisesArray = [
+      Promise.resolve(42),
+      Promise.resolve(true),
+      Promise.resolve(null),
+      Promise.resolve(undefined),
+      Promise.resolve([1, 2, 3]),
+    ];
+
+    const json = await stringifyAsync(promisesArray);
+
+    const decodedArray = parse(json) as typeof promisesArray;
+
+    await Promise.all(decodedArray.map(async (promise, index) => {
+      await expect(promise).resolves.toStrictEqual(await promisesArray[index]);
+    }));
+  });
 });
 
 type IndexableBuffer<T> = {
@@ -651,3 +644,51 @@ describe("Streaming using timers", () => {
     vi.clearAllTimers();
   });
 });
+
+
+describe.only("Parse references", () => {
+  test("Should parse object with cyclic reference", () => {
+    const obj: any = { num: 12 };
+    obj.self = obj;
+
+    const encoded = stringify(obj);
+    const decoded = parse(encoded) as any;
+
+    expect(decoded.num).toStrictEqual(12);
+    expect(decoded.self).toBeTruthy();
+  });
+
+  test("Should parse array with same reference", () => {
+    const obj = { name: 'Yatora Yaguchi' };
+    const characters = [obj, obj, obj]
+
+    const encoded = stringify(characters);
+    const decoded = parse(encoded) as typeof characters;
+
+    expect(decoded).toStrictEqual([{ name: 'Yatora Yaguchi' }, { name: 'Yatora Yaguchi' }, { name: 'Yatora Yaguchi' }]);
+    expect(decoded[0]).toBe(decoded[1])
+    expect(decoded[1]).toBe(decoded[2])
+  });
+
+
+  test.only("Should parse complex object with references", () => {
+    const obj = { value: 69 };
+    const complex = {
+      self: obj,
+      array: [obj, obj],
+      map: new Map([["key", obj]]),
+      set: new Set([obj]),
+    }
+
+    const json = stringify(complex);
+    const decoded = parse(json) as typeof complex;
+    console.log({ json, raw: JSON.parse(json) });
+    expect(decoded).toStrictEqual({
+      self: { value: 69 },
+      array: [{ value: 69 }, { value: 69 }, { value: 69 }],
+      map: new Map([["key", { value: 69 }]]),
+      set: new Set([{ value: 69 }])
+    });
+
+  })
+})

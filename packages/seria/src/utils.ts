@@ -1,5 +1,5 @@
 // https://github.com/sindresorhus/is-plain-obj/blob/main/index.js
-export function isPlainObject(value: unknown) {
+export function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (typeof value !== "object" || value === null) {
     return false;
   }
