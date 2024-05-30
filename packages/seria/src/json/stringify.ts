@@ -125,7 +125,7 @@ export function stringifyToStream(
           // `stringifyAsync` with an initial `id`
           // We use the initial to set the promise on the correct slot
           const serializedPromise = internal_serialize(resolved, {
-            replacers: replacers,
+            replacers,
             initialID: id,
           });
 
