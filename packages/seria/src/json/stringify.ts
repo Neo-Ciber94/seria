@@ -160,7 +160,7 @@ export function stringifyToStream(
         const resolveIterators = pendingIterators.map(async (iter) => {
           for await (const item of iter) {
             const isDone = item === 'done';
-            const gen = (async function* () { yield item; })();
+            const gen = (async function* () { yield item; })(); // FIXME: We can maybe cache this?
             const onceAsyncIterable = trackAsyncIterable(iter.id, gen, {
               resolved: isDone ? item : (item as any).item,
               isDone
