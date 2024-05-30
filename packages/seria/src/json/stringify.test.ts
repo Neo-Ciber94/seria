@@ -1,5 +1,6 @@
 import { describe, test, expect } from "vitest";
 import { stringify, stringifyToStream, stringifyAsync } from "./stringify";
+import { delay } from "../utils";
 
 describe("stringify object", () => {
   test("Should stringify/parse complex object", async () => {
@@ -351,5 +352,3 @@ describe("stringify async iterator", () => {
 });
 
 
-const delay = (ms: number) =>
-  new Promise<void>((resolve) => setTimeout(resolve, ms));
