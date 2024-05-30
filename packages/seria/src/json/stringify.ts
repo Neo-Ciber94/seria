@@ -7,6 +7,7 @@ import {
 import { bufferToBase64, isPlainObject } from "../utils";
 import { Tag } from "../tag";
 import {
+  isTrackingAsyncIterable,
   trackAsyncIterable,
   type TrackingAsyncIterable,
 } from "../trackingAsyncIterable";
@@ -126,7 +127,7 @@ export function stringifyToStream(
           // We use the initial to set the promise on the correct slot
           const serializedPromise = internal_serialize(resolved, {
             replacers,
-            initialID: id,
+            initialId: id,
           });
 
           await Promise.all(serializedPromise.pendingPromises);
@@ -158,14 +159,25 @@ export function stringifyToStream(
         const pendingIterators = Array.from(pendingIteratorsMap.values());
         const resolveIterators = pendingIterators.map(async (iter) => {
           for await (const item of iter) {
-            const asyncIteratorOutput = unsafe_writeOutput(
-              Tag.AsyncIterator,
-              iter.id,
-              [item]
-            );
+            const isDone = item === 'done';
+            const gen = (async function* () { yield item; })();
+            const onceAsyncIterable = trackAsyncIterable(iter.id, gen, {
+              resolved: isDone ? item : (item as any).item,
+              isDone
+            });
 
-            const genJson = JSON.stringify(asyncIteratorOutput, null, space);
+            const serializedAsyncIterator = internal_serialize(onceAsyncIterable, {
+              initialId: iter.id,
+              replacers,
+            });
+
+            await Promise.all(serializedAsyncIterator.pendingPromises);
+            for await (const _ of serializedAsyncIterator.pendingIterators) { /* */ }
+
+            const genJson = JSON.stringify(serializedAsyncIterator.output, null, space);
+            console.log({ genJson })
             controller.enqueue(`${genJson}\n\n`);
+
           }
         });
 
@@ -179,7 +191,7 @@ export function stringifyToStream(
 
 type SerializeOptions = {
   replacers?: Replacers | null;
-  initialID?: number;
+  initialId?: number;
   space?: number | string;
   formData?: FormData
 }
@@ -191,13 +203,13 @@ export function internal_serialize(
   value: unknown,
   opts: SerializeOptions
 ) {
-  const { replacers, space, initialID = 1, formData } = opts;
+  const { replacers, space, initialId = 1, formData } = opts;
   const serializedValues = new Map<number, unknown>();
   const referencesMap = new Map<object, Reference>();
   const pendingPromisesMap = new Map<number, TrackingPromise<any>>();
   const pendingIteratorsMap = new Map<number, TrackingAsyncIterable<any>>();
   const output: unknown[] = [];
-  let id = initialID;
+  let id = initialId;
 
   // Get the next id
   const nextId = () => {
@@ -493,6 +505,24 @@ function serializeAsyncIterable(
 ) {
   const id = context.nextId();
 
+  // This is a shortcut in case the iterator already contains a resolved value
+  if (isTrackingAsyncIterable(input) && input.context) {
+    const iteratorContext = input.context as { resolved?: unknown, isDone?: boolean };
+    const isDone = iteratorContext.isDone === true;
+
+    if (isDone) {
+      context.serializedValues.set(id, ["done"]);
+      context.checkSerialized();
+    }
+    else {
+      const ret = context.serialize(iteratorContext.resolved);
+      context.serializedValues.set(id, [ret]);
+      context.checkSerialized();
+    }
+
+    return serializeTagValue(Tag.AsyncIterator, id);
+  }
+
   // We send all the async iterable emited and any nested async iterable values.
   // Flattening the nested iterable would make no sense because we are not returning the exact
   // value was originally stringified. So we could:
@@ -519,7 +549,7 @@ function serializeAsyncIterable(
       const items = [...((context.output[id] as any[]) || []), ret];
       context.serializedValues.set(id, items);
       context.checkSerialized();
-      yield item;
+      yield { item };
     }
 
     // Notify is done
@@ -539,12 +569,6 @@ function serializeAsyncIterable(
  */
 export function serializeTagValue(tag: Tag, value?: number | string) {
   return value !== undefined ? `$${tag}${value}` : `$${tag}`;
-}
-
-function unsafe_writeOutput(tag: Tag, id: number, value: unknown) {
-  const output: unknown[] = [serializeTagValue(tag, id)];
-  output[id] = value;
-  return output;
 }
 
 function isAsyncIterable(value: any): value is AsyncIterable<unknown> {
