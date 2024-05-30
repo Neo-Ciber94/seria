@@ -12,10 +12,15 @@ import {
 } from "../trackingAsyncIterable";
 import { SeriaError } from "../error";
 
+type Reference = {
+  tag: Tag,
+  id: number
+}
+
 type SerializeContext = {
   output: unknown[];
   serializedValues: Map<number, unknown>;
-  referencesMap: Map<object, number>;
+  referencesMap: Map<object, Reference>;
   pendingPromisesMap: Map<number, TrackingPromise<any>>;
   pendingIteratorsMap: Map<number, TrackingAsyncIterable<any>>;
   space?: string | number;
@@ -179,6 +184,8 @@ type SerializeOptions = {
   formData?: FormData
 }
 
+
+
 /**
  * @internal
  */
@@ -188,7 +195,7 @@ export function internal_serialize(
 ) {
   const { replacers: replacer, space, initialID = 1, formData } = opts;
   const serializedValues = new Map<number, unknown>();
-  const referencesMap = new Map<object, number>();
+  const referencesMap = new Map<object, Reference>();
   const pendingPromisesMap = new Map<number, TrackingPromise<any>>();
   const pendingIteratorsMap = new Map<number, TrackingAsyncIterable<any>>();
   const output: unknown[] = [];
@@ -198,8 +205,6 @@ export function internal_serialize(
   const nextId = () => {
     return id++;
   };
-
-  const peekId = () => id;
 
   // Update the references of the serialized values
   const checkSerialized = () => {
@@ -252,23 +257,24 @@ export function internal_serialize(
         if (input === null) {
           return null;
         }
-        else if (referencesMap.has(input)) {
-          const id = referencesMap.get(input)!;
-          return serializeTagValue(Tag.Reference, id)
-        }
         else if (input instanceof String) {
           return serializeString(input.toString())
         }
         else if (input instanceof Date) {
           return serializeDate(input);
-        } else if (input instanceof Map) {
+        }
+        else if (referencesMap.has(input)) {
+          const { tag, id } = referencesMap.get(input)!;
+          return serializeTagValue(tag, id)
+        }
+
+        if (input instanceof Map) {
           return serializeMap(input, context);
         } else if (input instanceof Set) {
           return serializeSet(input, context);
         } else if (Array.isArray(input)) {
           return serializeArray(input, context);
         } else if (isPlainObject(input)) {
-          referencesMap.set(input, peekId() - 1)
           return serializePlainObject(input, context);
         } else if (input instanceof Promise) {
           return serializePromise(input, context);
@@ -283,11 +289,13 @@ export function internal_serialize(
             formData.set(fieldName, entry);
           }
 
+          referencesMap.set(input, { id, tag: Tag.FormData })
           return serializeTagValue(Tag.FormData, id);
         }
         else if (formData && input instanceof File) {
           const id = nextId();
           formData.set(`${id}_file`, input);
+          referencesMap.set(input, { id, tag: Tag.File })
           return serializeTagValue(Tag.File, id);
         }
         // Serialize typed arrrays
@@ -382,28 +390,34 @@ function serializeBigInt(input: bigint) {
 }
 
 function serializeDate(input: Date) {
-  return serializeTagValue(Tag.Date, input.toJSON());
+  const invalid = isNaN(input.getTime());
+  return serializeTagValue(Tag.Date, invalid ? '' : input.toISOString());
 }
+
 
 function serializeArray(input: Array<any>, context: SerializeContext) {
   const items: unknown[] = [];
+  const id = context.nextId();
+  context.referencesMap.set(input, { id, tag: Tag.Array })
+  context.serializedValues.set(id, items);
 
   for (const val of input) {
     items.push(context.serialize(val));
   }
 
-  return items;
+  return serializeTagValue(Tag.Array, id);
 }
 
 function serializeSet(input: Set<any>, context: SerializeContext) {
   const { serializedValues } = context;
   const items: unknown[] = [];
+  const id = context.nextId();
+  context.referencesMap.set(input, { id, tag: Tag.Set })
 
   for (const val of input) {
     items.push(context.serialize(val));
   }
 
-  const id = context.nextId();
   serializedValues.set(id, items);
   return serializeTagValue(Tag.Set, id);
 }
@@ -411,6 +425,8 @@ function serializeSet(input: Set<any>, context: SerializeContext) {
 function serializeMap(input: Map<any, any>, context: SerializeContext) {
   const { serializedValues } = context;
   const items: [unknown, unknown][] = [];
+  const id = context.nextId();
+  context.referencesMap.set(input, { id, tag: Tag.Map })
 
   for (const [k, v] of input) {
     const encodedKey = context.serialize(k);
@@ -418,7 +434,6 @@ function serializeMap(input: Map<any, any>, context: SerializeContext) {
     items.push([encodedKey, encodedValue]);
   }
 
-  const id = context.nextId();
   serializedValues.set(id, items);
   return serializeTagValue(Tag.Map, id);
 }
@@ -428,6 +443,9 @@ function serializePlainObject(
   context: SerializeContext
 ) {
   const obj: Record<string, unknown> = {};
+  const id = context.nextId();
+  context.serializedValues.set(id, obj);
+  context.referencesMap.set(input, { id, tag: Tag.Object })
 
   for (const [key, value] of Object.entries(input)) {
     if (typeof key === 'symbol') {
@@ -437,7 +455,7 @@ function serializePlainObject(
     obj[key] = context.serialize(value);
   }
 
-  return obj;
+  return serializeTagValue(Tag.Object, id);
 }
 
 function serializePromise(input: Promise<any>, context: SerializeContext) {
@@ -468,6 +486,7 @@ function serializeTypedArray(
   const id = context.nextId();
   const buffer = bufferToBase64(input.buffer);
   context.serializedValues.set(id, buffer);
+  context.referencesMap.set(input, { id, tag })
   return serializeTagValue(tag, id);
 }
 

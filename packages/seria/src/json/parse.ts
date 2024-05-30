@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { serialize } from "v8";
 import { createChannel, type Sender } from "../channel";
 import { deferredPromise, type DeferredPromise } from "../deferredPromise";
 import { SeriaError } from "../error";
@@ -184,15 +185,12 @@ function internal_parse(value: string, opts?: Options) {
   const { deferPromises = false, revivers } = opts || {};
   const pendingPromises = new Map<number, DeferredPromise<unknown>>();
   const pendingChannels = new Map<number, Sender<unknown>>();
-  const existing = new Map<number, unknown>();
+  const references = new Map<number, any>();
 
-  let id = 0;
-  const nextId = () => id++;
-
-  const { references, base } = (function () {
+  const { indices, base } = (function () {
     try {
-      const references = JSON.parse(value) as readonly unknown[];
-      return { references, base: references[0] };
+      const indices = JSON.parse(value) as readonly unknown[];
+      return { indices, base: indices[0] };
     } catch {
       throw new SeriaError(`Failed to parse base value: ${value}`);
     }
@@ -219,7 +217,7 @@ function internal_parse(value: string, opts?: Options) {
 
             const rawId = maybeTag.slice(type.length + 2)
             const id = parseTagId(rawId);
-            const val = deserialize(references[id]);
+            const val = deserialize(indices[id]);
             return reviver(val);
           }
 
@@ -254,19 +252,12 @@ function internal_parse(value: string, opts?: Options) {
             case maybeTag[0] === Tag.Set: {
               const id = parseTagId(input.slice(2));
               const set = new Set<any>();
+              const values = indices[id];
 
-              try {
-                const values = references[id];
-                if (values) {
-                  if (Array.isArray(values)) {
-                    for (const item of values) {
-                      set.add(deserialize(item));
-                    }
-                  }
+              if (values && Array.isArray(values)) {
+                for (const item of values) {
+                  set.add(deserialize(item));
                 }
-              } catch (err) {
-                // failed to parse
-                console.error(err);
               }
 
               return set;
@@ -274,38 +265,52 @@ function internal_parse(value: string, opts?: Options) {
             case maybeTag[0] === Tag.Map: {
               const id = parseTagId(input.slice(2));
               const map = new Map<any, any>();
+              const values = indices[id];
 
-              try {
-                const values = references[id];
-                if (values) {
-                  if (Array.isArray(values)) {
-                    for (const [key, value] of values) {
-                      const decodedKey = deserialize(key);
-                      const decodedValue = deserialize(value);
-                      map.set(decodedKey, decodedValue);
-                    }
-                  }
+              if (values && Array.isArray(values)) {
+                for (const [key, value] of values) {
+                  const decodedKey = deserialize(key);
+                  const decodedValue = deserialize(value);
+                  map.set(decodedKey, decodedValue);
                 }
-              } catch (err) {
-                // failed to parse
-                console.error(err);
               }
 
               return map;
             }
-            case maybeTag[0] === Tag.Reference: {
+            case maybeTag[0] === Tag.Object: {
               const id = parseTagId(input.slice(2));
-              const ref = existing.get(id);
-
-              if (ref === undefined) {
-                throw new SeriaError("Reference not found")
+              if (references.has(id)) {
+                return references.get(id)
               }
 
-              return ref;
+              const value = indices[id];
+              const obj: Record<string, unknown> = {};
+              references.set(id, obj);
+
+              if (isPlainObject(value)) {
+                for (const [k, v] of Object.entries(value)) {
+                  obj[k] = deserialize(v);
+                }
+              }
+
+              return obj;
+            }
+            case maybeTag[0] === Tag.Array: {
+              const id = parseTagId(input.slice(2));
+              const arr: any[] = [];
+              const values = indices[id];
+
+              if (Array.isArray(values)) {
+                for (const item of values) {
+                  arr.push(deserialize(item));
+                }
+              }
+
+              return arr;
             }
             case maybeTag[0] === Tag.Promise: {
               const id = parseTagId(input.slice(2));
-              const rawValue = references[id];
+              const rawValue = indices[id];
 
               if (rawValue === undefined) {
                 if (deferPromises) {
@@ -326,7 +331,7 @@ function internal_parse(value: string, opts?: Options) {
             }
             case maybeTag[0] === Tag.AsyncIterator: {
               const id = parseTagId(input.slice(2));
-              const asyncIteratorValues = references[id];
+              const asyncIteratorValues = indices[id];
 
               if (!asyncIteratorValues) {
                 const [sender, receiver] = createChannel({ id });
@@ -364,11 +369,13 @@ function internal_parse(value: string, opts?: Options) {
             }
             case isTypedArrayTag(maybeTag[0]): {
               return deserializeBuffer(maybeTag[0], input, {
-                references,
+                references: indices,
               });
             }
             default:
-              throw new SeriaError(`Unknown value: ${input}`);
+              {
+                throw new SeriaError(`Unknown value: ${input}`);
+              }
           }
         } else {
           throw new SeriaError(`Invalid reference value: ${input}`);
@@ -385,8 +392,6 @@ function internal_parse(value: string, opts?: Options) {
           return arr;
         } else if (isPlainObject(input)) {
           const obj: Record<string, unknown> = {};
-          existing.set(nextId(), obj);
-
           for (const [key, value] of Object.entries(input)) {
             obj[key] = deserialize(value);
           }
