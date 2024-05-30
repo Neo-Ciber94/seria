@@ -565,25 +565,24 @@ describe("Parse references", () => {
     expect(decoded[1]).toBe(decoded[2])
   });
 
+  test("Should parse complex object with references", () => {
+    const obj = { value: 69 };
+    const complex = {
+      self: obj,
+      array: [obj, obj],
+      map: new Map([["key", obj]]),
+      set: new Set([obj]),
+    }
 
-  test.todo("Should parse complex object with references", () => {
-    // const obj = { value: 69 };
-    // const complex = {
-    //   self: obj,
-    //   array: [obj, obj],
-    //   map: new Map([["key", obj]]),
-    //   set: new Set([obj]),
-    // }
+    const json = stringify(complex);
+    const decoded = parse(json) as typeof complex;
+    console.log({ json, raw: JSON.parse(json) });
 
-    // const json = stringify(complex);
-    // const decoded = parse(json) as typeof complex;
-    // console.log({ json, raw: JSON.parse(json) });
-
-    // expect(decoded).toStrictEqual({
-    //   self: { value: 69 },
-    //   array: [{ value: 69 }, { value: 69 }, { value: 69 }],
-    //   map: new Map([["key", { value: 69 }]]),
-    //   set: new Set([{ value: 69 }])
-    // });
+    expect(decoded).toStrictEqual({
+      self: { value: 69 },
+      array: [{ value: 69 }, { value: 69 }],
+      map: new Map([["key", { value: 69 }]]),
+      set: new Set([{ value: 69 }])
+    });
   })
 })
