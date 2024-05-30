@@ -389,20 +389,20 @@ describe("Custom parser with reviver and replacer", () => {
   });
 });
 
-describe.skip("Parse async iterator", () => {
+describe("Parse async iterator", () => {
   test("Should parse async iterator", async () => {
     async function* gen() {
       yield 1;
-      yield 2;
-      yield 3;
+      yield { x: 2 };
+      yield false;
     }
 
     const json = await stringifyAsync(gen());
     const asyncIterator = parse(json) as AsyncIterator<unknown>;
 
     expect((await asyncIterator.next()).value).toStrictEqual(1);
-    expect((await asyncIterator.next()).value).toStrictEqual(2);
-    expect((await asyncIterator.next()).value).toStrictEqual(3);
+    expect((await asyncIterator.next()).value).toStrictEqual({ x: 2 });
+    expect((await asyncIterator.next()).value).toStrictEqual(false);
     expect((await asyncIterator.next()).done).toBeTruthy();
   });
 
@@ -410,10 +410,10 @@ describe.skip("Parse async iterator", () => {
     async function* gen() {
       yield delay(40).then(() => 99);
 
-      yield delay(40).then(() => 98);
+      yield delay(40).then(() => true);
 
       await delay(100);
-      yield Promise.resolve(97);
+      yield Promise.resolve([1, 2, 3]);
     }
 
     const json = await stringifyAsync(gen());
@@ -421,14 +421,16 @@ describe.skip("Parse async iterator", () => {
     const iter = value[Symbol.asyncIterator]();
 
     expect((await iter.next()).value).toStrictEqual(99);
-    expect((await iter.next()).value).toStrictEqual(98);
-    expect((await iter.next()).value).toStrictEqual(97);
+    expect((await iter.next()).value).toStrictEqual(true);
+    expect((await iter.next()).value).toStrictEqual([1, 2, 3]);
     expect((await iter.next()).done).toBeTruthy();
   });
 
   test("Should parse async iterator with streaming", async () => {
     async function* gen() {
+      yield 1;
       yield { kouhai: "Koito Yui" };
+      yield true;
       yield { senpai: "Touko Nanami" };
     }
 
@@ -438,7 +440,9 @@ describe.skip("Parse async iterator", () => {
     )) as TrackingAsyncIterable<unknown>;
     const iter = value[Symbol.asyncIterator]();
 
+    expect((await iter.next()).value).toStrictEqual(1);
     expect((await iter.next()).value).toStrictEqual({ kouhai: "Koito Yui" });
+    expect((await iter.next()).value).toStrictEqual(true);
     expect((await iter.next()).value).toStrictEqual({ senpai: "Touko Nanami" });
     expect((await iter.next()).done).toBeTruthy();
   });

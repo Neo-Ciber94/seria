@@ -99,29 +99,25 @@ export async function stringifyAsync(
 /**
  * Convert a value to a `ReadableStream` that stringify each value.
  * @param value The value to convert.
- * @param replacer A function that encode a custom value.
+ * @param replacers A function that encode a custom value.
  * @param space Adds indentation, white space to the json values line-breaks.
  * @returns A stream that stringify each value.
  */
 export function stringifyToStream(
   value: unknown,
-  replacer?: Replacers | null,
+  replacers?: Replacers | null,
   space?: number | string
 ) {
-  const result = internal_serialize(value, {
-    replacers: replacer,
-    space,
-  });
+  const result = internal_serialize(value, { replacers, space });
+  const json = JSON.stringify(result.output, null, space);
+  const pendingIteratorsMap = new Map<number, TrackingAsyncIterable<unknown>>();
 
   return new ReadableStream<string>({
     async start(controller) {
-      const json = JSON.stringify(result.output, null, space);
-      const pendingIteratorsMap = new Map<
-        number,
-        TrackingAsyncIterable<unknown>
-      >();
+      // We send the first chunk which may be the container or the final value
       controller.enqueue(`${json}\n\n`);
 
+      // Resolve and send all the promises
       await forEachPromise(result.pendingPromises, {
         async onResolved({ data, id }) {
           const resolved = trackPromise(id, Promise.resolve(data));
@@ -129,7 +125,7 @@ export function stringifyToStream(
           // `stringifyAsync` with an initial `id`
           // We use the initial to set the promise on the correct slot
           const serializedPromise = internal_serialize(resolved, {
-            replacers: replacer,
+            replacers: replacers,
             initialID: id,
           });
 
@@ -150,28 +146,32 @@ export function stringifyToStream(
         },
       });
 
+      // The resolved promises may return other async generator we need to also resolve
       if (result.pendingIterators.length > 0) {
         for (const gen of result.pendingIterators) {
           pendingIteratorsMap.set(gen.id, gen);
         }
       }
 
-      const pendingIterators = Array.from(pendingIteratorsMap.values());
+      // Resolve and send all the async generators
+      if (pendingIteratorsMap.size > 0) {
+        const pendingIterators = Array.from(pendingIteratorsMap.values());
+        const resolveIterators = pendingIterators.map(async (iter) => {
+          for await (const item of iter) {
+            const asyncIteratorOutput = unsafe_writeOutput(
+              Tag.AsyncIterator,
+              iter.id,
+              [item]
+            );
 
-      const resolveIterators = pendingIterators.map(async (iter) => {
-        for await (const item of iter) {
-          const asyncIteratorOutput = unsafe_writeOutput(
-            Tag.AsyncIterator,
-            iter.id,
-            [item]
-          );
+            const genJson = JSON.stringify(asyncIteratorOutput, null, space);
+            controller.enqueue(`${genJson}\n\n`);
+          }
+        });
 
-          const genJson = JSON.stringify(asyncIteratorOutput, null, space);
-          controller.enqueue(`${genJson}\n\n`);
-        }
-      });
+        await Promise.all(resolveIterators);
+      }
 
-      await Promise.all(resolveIterators);
       controller.close();
     },
   });
@@ -183,8 +183,6 @@ type SerializeOptions = {
   space?: number | string;
   formData?: FormData
 }
-
-
 
 /**
  * @internal

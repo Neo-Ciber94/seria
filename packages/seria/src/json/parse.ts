@@ -19,7 +19,7 @@ type Context = {
  */
 export type Revivers = {
   [tag: string]: (value: any) => unknown;
-}
+};
 
 /**
  * Parse a `json` string to a value.
@@ -112,7 +112,9 @@ export function internal_parseFromStream(
             const deferred = promisesMap.get(data.id);
 
             if (!deferred) {
-              throw new SeriaError(`Promise with id: '${data.id}' was not found`);
+              throw new SeriaError(
+                `Promise with id: '${data.id}' was not found`
+              );
             }
 
             try {
@@ -206,14 +208,14 @@ function internal_parse(value: string, opts?: Options) {
 
           // Custom keys are in the form of: `$_{key}_`
           if (revivers && maybeTag.startsWith("_")) {
-            const type = maybeTag.slice(1, maybeTag.lastIndexOf("_"))
+            const type = maybeTag.slice(1, maybeTag.lastIndexOf("_"));
             const reviver = revivers[type];
 
             if (reviver == null) {
-              throw new SeriaError(`Reviver for key '${type}' was not found`)
+              throw new SeriaError(`Reviver for key '${type}' was not found`);
             }
 
-            const rawId = maybeTag.slice(type.length + 2)
+            const rawId = maybeTag.slice(type.length + 2);
             const id = parseTagId(rawId);
             const val = deserialize(indices[id]);
             return reviver(val);
@@ -237,8 +239,44 @@ function internal_parse(value: string, opts?: Options) {
             return -0;
           } else if (maybeTag === Tag.NaN_) {
             return NaN;
-          } else if (maybeTag[0] === Tag.Set) {
-            const id = parseTagId(input.slice(2));
+          }
+
+          // All these reference types have an id
+          const id = parseTagId(input.slice(2));
+
+          if (references.has(id)) {
+            return references.get(id);
+          }
+
+          if (maybeTag[0] === Tag.Object) {
+            const value = indices[id];
+
+            if (isPlainObject(value)) {
+              const obj: Record<string, unknown> = {};
+              references.set(id, obj);
+              for (const [k, v] of Object.entries(value)) {
+                obj[k] = deserialize(v);
+              }
+              return obj;
+            }
+
+            return undefined;
+          } else if (maybeTag[0] === Tag.Array) {
+            const values = indices[id];
+
+            if (Array.isArray(values)) {
+              const arr: any[] = [];
+
+              for (const item of values) {
+                arr.push(deserialize(item));
+              }
+
+              return arr;
+            }
+
+            return undefined;
+          }
+          else if (maybeTag[0] === Tag.Set) {
             const values = indices[id];
 
             if (values && Array.isArray(values)) {
@@ -252,7 +290,6 @@ function internal_parse(value: string, opts?: Options) {
 
             return undefined;
           } else if (maybeTag[0] === Tag.Map) {
-            const id = parseTagId(input.slice(2));
             const values = indices[id];
 
             if (values && Array.isArray(values)) {
@@ -267,41 +304,7 @@ function internal_parse(value: string, opts?: Options) {
             }
 
             return undefined;
-          } else if (maybeTag[0] === Tag.Object) {
-            const id = parseTagId(input.slice(2));
-            if (references.has(id)) {
-              return references.get(id)
-            }
-
-            const value = indices[id];
-
-            if (isPlainObject(value)) {
-              const obj: Record<string, unknown> = {};
-              references.set(id, obj);
-              for (const [k, v] of Object.entries(value)) {
-                obj[k] = deserialize(v);
-              }
-              return obj;
-            }
-
-            return undefined;
-          } else if (maybeTag[0] === Tag.Array) {
-            const id = parseTagId(input.slice(2));
-            const values = indices[id];
-
-            if (Array.isArray(values)) {
-              const arr: any[] = [];
-
-              for (const item of values) {
-                arr.push(deserialize(item));
-              }
-
-              return arr;
-            }
-
-            return undefined;
           } else if (maybeTag[0] === Tag.Promise) {
-            const id = parseTagId(input.slice(2));
             const rawValue = indices[id];
 
             if (rawValue === undefined) {
@@ -321,7 +324,6 @@ function internal_parse(value: string, opts?: Options) {
               throw new SeriaError("Unable to resolve promise value");
             }
           } else if (maybeTag[0] === Tag.AsyncIterator) {
-            const id = parseTagId(input.slice(2));
             const asyncIteratorValues = indices[id];
 
             if (!asyncIteratorValues) {
@@ -371,9 +373,10 @@ function internal_parse(value: string, opts?: Options) {
       case "object": {
         if (input === null) {
           return null;
-        }
-        else {
-          throw new SeriaError(`Invalid object value: ${JSON.stringify(input)}`);
+        } else {
+          throw new SeriaError(
+            `Invalid object value: ${JSON.stringify(input)}`
+          );
         }
       }
       default:
