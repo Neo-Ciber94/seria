@@ -18,10 +18,11 @@ jobs:
         with:
           node-version: 18
 
-      - name: install
-        uses: borales/actions-yarn@v4
-        with:
-          cmd: install
+      - name: Setup yarn
+        run: npm install -g yarn
+
+      - name: Install
+        run: yarn install --frozen-lockfile
 
       - name: Check Types
         run: yarn run typecheck # FIXME: this fails with src/components/LiveExample.tsx(3,24): error TS2307: Cannot find module 'seria' or its corresponding type declarations.
@@ -40,7 +41,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-      - uses: borales/actions-yarn@v4
+
+      - name: Setup yarn
+        run: npm install -g yarn
 
       - uses: dorny/paths-filter@v3
         id: changes
