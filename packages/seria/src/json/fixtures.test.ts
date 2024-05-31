@@ -90,10 +90,11 @@ describe("Basic stringify/parse", () => {
   });
 
   test("Should stringify/parse date", () => {
-    const json = stringify(new Date(2024, 2, 15, 20, 35, 15));
+    const date = new Date(2024, 2, 15, 20, 35, 15);
+    const json = stringify(date);
     expect(json).toStrictEqual('["$D2024-03-16T00:35:15.000Z"]');
     const value = parse(json);
-    expect(value).toStrictEqual(new Date(2024, 2, 15, 20, 35, 15));
+    expect(value).toStrictEqual(date);
   });
 
   test("Should stringify/parse invalid date", () => {
@@ -174,11 +175,12 @@ describe("Basic stringify/parse", () => {
   });
 
   test("Should stringify/parse map with different keys", () => {
+    const date = new Date(2000, 4, 3);
     const json = stringify(
       new Map<any, any>([
         [3, true],
         [undefined, "adios"],
-        [-2n, new Date(2000, 4, 3)],
+        [-2n, date],
         [Symbol.for("key"), false],
       ]),
     );
@@ -198,7 +200,7 @@ describe("Basic stringify/parse", () => {
 
     expect(map.get(3)).toStrictEqual(true);
     expect(map.get(undefined)).toStrictEqual("adios");
-    expect(map.get(-2n)).toStrictEqual(new Date(2000, 4, 3));
+    expect(map.get(-2n)).toStrictEqual(date);
     expect(map.get(Symbol.for("key"))).toStrictEqual(false);
   });
 
