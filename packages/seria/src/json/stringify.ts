@@ -3,6 +3,8 @@ import {
   type TrackingPromise,
   trackPromise,
   forEachPromise,
+  trackResolvedPromise,
+  isTrackingPromise,
 } from "../trackingPromise";
 import { bufferToBase64, isPlainObject } from "../utils";
 import { Tag } from "../tag";
@@ -121,7 +123,7 @@ export function stringifyToStream(
       // Resolve and send all the promises
       await forEachPromise(result.pendingPromises, {
         async onResolved({ data, id }) {
-          const resolved = trackPromise(id, Promise.resolve(data));
+          const resolved = trackResolvedPromise(id, data);
 
           // `stringifyAsync` with an initial `id`
           // We use the initial to set the promise on the correct slot
@@ -468,6 +470,13 @@ function serializePlainObject(
 
 function serializePromise(input: Promise<any>, context: SerializeContext) {
   const id = context.nextId();
+
+  if (isTrackingPromise(input) && input.status.state === 'resolved') {
+    const ret = context.serialize(input.status.data);
+    context.serializedValues.set(id, ret);
+    context.checkSerialized(); // Update the values with the new one
+    return serializeTagValue(Tag.Promise, id);
+  }
 
   // We create a new promise that resolve to the serialized value
   const resolvingPromise = input.then((value) => {

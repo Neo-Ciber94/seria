@@ -39,6 +39,17 @@ export function trackPromise<T>(
   return tracking;
 }
 
+export function trackResolvedPromise<T>(id: number, data: T): TrackingPromise<T> {
+  const promise = Promise.resolve(data);
+  const tracking = Object.assign(promise, {
+    id,
+    status: { state: "resolved", data },
+    [TRACKING_PROMISE_SYMBOL]: true,
+  }) as TrackingPromise<T>;
+
+  return tracking;
+}
+
 export function isTrackingPromise(
   value: any
 ): value is TrackingPromise<unknown> {
@@ -77,3 +88,4 @@ export async function forEachPromise<T = unknown>(
 
   await Promise.all(pendingPromises);
 }
+
