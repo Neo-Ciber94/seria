@@ -175,7 +175,7 @@ describe("Basic stringify/parse", () => {
   });
 
   test("Should stringify/parse map with different keys", () => {
-    const date = new Date("2000-05-03T04:00:00.000");
+    const date = new Date("2000-05-03T04:00:00.000Z");
     const json = stringify(
       new Map<any, any>([
         [3, true],
