@@ -1,9 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { stringify, stringifyToStream, stringifyAsync } from "./stringify";
-import { parse, parseFromStream, internal_parseFromStream } from "./parse";
+
 import { type TrackingAsyncIterable } from "../trackingAsyncIterable";
 import { delay } from "../utils";
+import { internal_parseFromStream, parseFromStream } from "./parseFromStream";
+import { stringifyAsync } from "./stringifyAsync";
+import { stringifyToStream } from "./stringifyToStream";
+import { parse, stringify } from "..";
 
 type IndexableBuffer<T> = {
   [index: number]: T;

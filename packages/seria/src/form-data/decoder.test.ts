@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, test } from "vitest";
-import { encodeAsync } from ".";
+import { encodeAsync } from "./encode";
 import { decode } from ".";
 import { delay } from "../utils";
 
@@ -100,7 +100,7 @@ describe("Decode object", async () => {
 
     const encoded = await encodeAsync(obj);
     const decoded: any = decode(encoded);
-    
+
     expect(decoded.str).toStrictEqual("hello");
     expect(decoded.num).toStrictEqual(42);
     expect(decoded.truthty).toStrictEqual(true);

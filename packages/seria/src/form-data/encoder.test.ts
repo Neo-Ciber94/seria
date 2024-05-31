@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { encodeAsync, encode } from ".";
+import { encodeAsync, encode } from "./encode";
 
 describe("Encode value", () => {
   test("Encode string", async () => {

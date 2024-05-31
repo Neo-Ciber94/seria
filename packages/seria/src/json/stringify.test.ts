@@ -1,6 +1,8 @@
 import { describe, test, expect } from "vitest";
-import { stringify, stringifyToStream, stringifyAsync } from "./stringify";
 import { delay } from "../utils";
+import { stringify } from "./stringify";
+import { stringifyAsync } from "./stringifyAsync";
+import { stringifyToStream } from "./stringifyToStream";
 
 describe("stringify object", () => {
   test("Should stringify/parse complex object", async () => {

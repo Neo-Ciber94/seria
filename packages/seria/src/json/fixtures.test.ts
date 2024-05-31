@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { test, describe, expect } from "vitest";
-import { stringify, stringifyAsync } from "./stringify";
+import { stringify } from "./stringify";
 import { parse } from "./parse";
+import { stringifyAsync } from "./stringifyAsync";
 
 describe("Basic stringify/parse", () => {
     test("Should stringify/parse number", () => {
