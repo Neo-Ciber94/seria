@@ -90,7 +90,7 @@ describe("Basic stringify/parse", () => {
   });
 
   test("Should stringify/parse date", () => {
-    const date = new Date(2024, 2, 15, 20, 35, 15);
+    const date = new Date("2024-03-16T00:35:15.000Z");
     const json = stringify(date);
     expect(json).toStrictEqual('["$D2024-03-16T00:35:15.000Z"]');
     const value = parse(json);
@@ -175,7 +175,7 @@ describe("Basic stringify/parse", () => {
   });
 
   test("Should stringify/parse map with different keys", () => {
-    const date = new Date(2000, 4, 3);
+    const date = new Date("2000-05-03T04:00:00.000");
     const json = stringify(
       new Map<any, any>([
         [3, true],
