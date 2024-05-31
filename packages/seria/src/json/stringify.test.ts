@@ -74,12 +74,22 @@ describe("stringify object", () => {
   });
 });
 
+describe("Fail to stringify", () => {
+  test("Should fail to stringify function", () => {
+    expect(() => stringify(function () {})).toThrow();
+  });
+});
+
 describe("stringify promise", () => {
   test("Should throw on pending promise", () => {
     expect(() => stringify(Promise.resolve(99))).toThrow();
   });
 
-  test("stringify promise", async () => {
+  test("Should throw on rejected promise", async () => {
+    await expect(() => stringifyAsync(Promise.reject("oh oh"))).rejects.toThrow();
+  });
+
+  test("Should stringifyAsync promise", async () => {
     const promise = (async () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
       return 69;
@@ -90,21 +100,21 @@ describe("stringify promise", () => {
     expect(JSON.parse(data)[1]).toStrictEqual(69);
   });
 
-  test("stringify resolved promise", async () => {
+  test("Should stringifyAsync resolved promise", async () => {
     const promise = Promise.resolve(42);
     const data = await stringifyAsync(promise);
     expect(JSON.parse(data)[0]).toStrictEqual(`$@1`);
     expect(JSON.parse(data)[1]).toStrictEqual(42);
   });
 
-  test("stringify promise with set", async () => {
+  test("Should stringifyAsync promise with set", async () => {
     const p = Promise.resolve(new Set([1, 2, 3]));
     const json = await stringifyAsync(p);
 
     expect(json).toStrictEqual(`["$@1","$W2",[1,2,3]]`);
   });
 
-  test("stringify promise with promise", async () => {
+  test("Should stringifyAsync promise with promise", async () => {
     const promise = Promise.resolve(
       (async () => {
         await new Promise((resolve) => setTimeout(resolve, 50));
@@ -117,7 +127,7 @@ describe("stringify promise", () => {
     expect(JSON.parse(data)[1]).toStrictEqual(34);
   });
 
-  test("stringify to stream", async () => {
+  test("Should stringifyToStream object with single promise", async () => {
     const objWithPromise = {
       num: 24,
       text: "hello",
@@ -130,25 +140,16 @@ describe("stringify promise", () => {
     const stream = stringifyToStream(objWithPromise);
     const reader = stream.getReader();
 
-    const firstChunk = (await reader.read()).value!;
-    expect(firstChunk).toStrictEqual(`["$R1",{"num":24,"text":"$$hello","promise":"$@2"}]\n\n`);
+    const chunk_1 = (await reader.read()).value!;
+    expect(chunk_1).toStrictEqual(`["$R1",{"num":24,"text":"$$hello","promise":"$@2"}]\n\n`);
 
-    const p1 = JSON.parse(firstChunk)[1];
-    expect(p1).toBeTruthy();
-    expect(p1.num).toStrictEqual(24);
-    expect(p1.text).toStrictEqual(`$$hello`);
+    const chunk_2 = (await reader.read()).value!;
+    expect(chunk_2).toStrictEqual(`["$@2",null,200]\n\n`);
 
-    // Await for promises for complete
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    const secondChunk = (await reader.read()).value!;
-    expect(secondChunk).toStrictEqual(`["$@2",null,200]\n\n`);
-
-    const p2 = JSON.parse(secondChunk);
-    expect(p2[2]).toStrictEqual(200);
     expect((await reader.read()).done).toBeTruthy();
   });
 
-  test("stringify objet with promises", async () => {
+  test("Should stringifyToStream objet with multiple promises", async () => {
     const objWithPromise = {
       num: Promise.resolve(49),
       text: Promise.resolve("Ice Cream"),
@@ -161,18 +162,18 @@ describe("stringify promise", () => {
     const stream = stringifyToStream(objWithPromise);
     const reader = stream.getReader();
 
-    const firstChunk = (await reader.read()).value!;
-    expect(firstChunk).toStrictEqual(`["$R1",{"num":"$@2","text":"$@3","promise":"$@4"}]\n\n`);
+    const chunk_1 = (await reader.read()).value!;
+    expect(chunk_1).toStrictEqual(`["$R1",{"num":"$@2","text":"$@3","promise":"$@4"}]\n\n`);
 
-    const secondChunk = (await reader.read()).value!;
-    expect(secondChunk).toStrictEqual(`["$@2",null,49]\n\n`);
+    const chunk_2 = (await reader.read()).value!;
+    expect(chunk_2).toStrictEqual(`["$@2",null,49]\n\n`);
 
-    const thirdChunk = (await reader.read()).value!;
-    expect(thirdChunk).toStrictEqual(`["$@3",null,null,"$$Ice Cream"]\n\n`);
+    const chunk_3 = (await reader.read()).value!;
+    expect(chunk_3).toStrictEqual(`["$@3",null,null,"$$Ice Cream"]\n\n`);
 
     await new Promise((resolve) => setTimeout(resolve, 50));
-    const forthChunk = (await reader.read()).value!;
-    expect(forthChunk).toStrictEqual(`["$@4",null,null,null,"$R5",{"name":"$$Ayaka"}]\n\n`);
+    const chunk_4 = (await reader.read()).value!;
+    expect(chunk_4).toStrictEqual(`["$@4",null,null,null,"$R5",{"name":"$$Ayaka"}]\n\n`);
 
     expect((await reader.read()).done).toBeTruthy();
   });
@@ -187,7 +188,7 @@ describe("stringify async iterator", () => {
     expect(() => stringify(gen())).toThrow();
   });
 
-  test("Should stringify an async iterator", async () => {
+  test("Should stringifyAsync an async iterator", async () => {
     const gen = async function* () {
       yield 1;
       yield 2;
@@ -198,7 +199,7 @@ describe("stringify async iterator", () => {
     expect(json).toStrictEqual(`["$#1",[1,2,3,"done"]]`);
   });
 
-  test("Should stringify an async iterator that yields async iterator", async () => {
+  test("Should stringifyAsync an async iterator that yields async iterator", async () => {
     async function* range(from: number, to: number) {
       for (let i = from; i <= to; i++) {
         yield i;
@@ -215,7 +216,7 @@ describe("stringify async iterator", () => {
     expect(json).toStrictEqual(`["$#1",[1,2,3,4,5,"done"]]`);
   });
 
-  test("Should stringify an async iterator that yields generators to stream", async () => {
+  test("Should stringifyToStream an async iterator that yields generators to stream", async () => {
     async function* range(from: number, to: number) {
       for (let i = from; i <= to; i++) {
         yield i;
@@ -248,7 +249,7 @@ describe("stringify async iterator", () => {
     expect((await reader.read())?.done).toBeTruthy();
   });
 
-  test("Should stringify an async iterator that returns other async iterator to stream", async () => {
+  test("Should stringifyToStream an async iterator that returns other async iterator to stream", async () => {
     async function* range(from: number, to: number) {
       for (let i = from; i <= to; i++) {
         yield i;
@@ -281,7 +282,7 @@ describe("stringify async iterator", () => {
     expect((await reader.read())?.done).toBeTruthy();
   });
 
-  test("Should stringify an async iterator to stream", async () => {
+  test("Should stringifyAsync an async iterator to stream", async () => {
     const gen = async function* () {
       yield 1;
       yield false;
@@ -290,8 +291,6 @@ describe("stringify async iterator", () => {
       yield Promise.resolve([1, 2, 3]);
     };
 
-    const val = await stringifyAsync(gen());
-    console.log({ val });
     const reader = stringifyToStream(gen()).getReader();
     const chunk_1 = (await reader.read())?.value;
     const chunk_2 = (await reader.read())?.value;
@@ -308,7 +307,7 @@ describe("stringify async iterator", () => {
     expect((await reader.read())?.done).toBeTruthy();
   });
 
-  test("Should stringify promise resolving to async iterator", async () => {
+  test("Should stringifyAsync promise resolving to async iterator", async () => {
     const gen = async function* () {
       yield 1;
       yield 2;
@@ -319,7 +318,7 @@ describe("stringify async iterator", () => {
     expect(json).toStrictEqual(`["$@1","$#2",[1,2,"done"]]`);
   });
 
-  test("Should stringify promise resolving to async iterator to stream", async () => {
+  test("Should stringifyToStream promise resolving to async iterator to stream", async () => {
     const gen = async function* () {
       yield 1;
       yield 2;
