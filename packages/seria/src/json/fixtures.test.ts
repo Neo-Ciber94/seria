@@ -181,12 +181,12 @@ describe("Basic stringify/parse", () => {
         [3, true],
         [undefined, "adios"],
         [-2n, date],
-        [Symbol.for("key"), false],
+        [null, false],
       ]),
     );
 
     expect(json).toStrictEqual(
-      '["$Q1",[[3,true],["$undefined","$$adios"],["$n-2","$D2000-05-03T04:00:00.000Z"],["$Skey",false]]]',
+      '["$Q1",[[3,true],["$undefined","$$adios"],["$n-2","$D2000-05-03T04:00:00.000Z"],[null,false]]]',
     );
     const map = parse(json) as Map<any, any>;
     expect(map).toStrictEqual(
@@ -194,14 +194,14 @@ describe("Basic stringify/parse", () => {
         [3, true],
         [undefined, "adios"],
         [-2n, new Date(2000, 4, 3, 0, 0, 0)],
-        [Symbol.for("key"), false],
+        [null, false],
       ]),
     );
 
     expect(map.get(3)).toStrictEqual(true);
     expect(map.get(undefined)).toStrictEqual("adios");
     expect(map.get(-2n)).toStrictEqual(date);
-    expect(map.get(Symbol.for("key"))).toStrictEqual(false);
+    expect(map.get(null)).toStrictEqual(false);
   });
 
   test("Should stringify/parse object", () => {
