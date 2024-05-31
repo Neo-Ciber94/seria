@@ -3,6 +3,10 @@
     "name": "seria-monorepo",
     "private": true,
     "version": "0.0.0",
+    "workspaces": [
+        "packages/*",
+        "website"
+    ],
     "scripts": {
         "build": "turbo run build --filter ./packages/**/*",
         "typecheck": "turbo run typecheck --filter ./packages/**/*",
