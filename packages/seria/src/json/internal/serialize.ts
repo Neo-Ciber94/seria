@@ -8,6 +8,7 @@ import {
 } from "../../trackingAsyncIterable";
 import { type TrackingPromise, isTrackingPromise, trackPromise } from "../../trackingPromise";
 import { isPlainObject, bufferToBase64 } from "../../utils";
+import { STREAMING_DONE } from "../constants";
 import { type Replacers } from "../stringify";
 
 export type Reference = {
@@ -335,7 +336,7 @@ function serializeAsyncIterable(input: AsyncIterable<unknown>, context: Serializ
     const isDone = iteratorContext.isDone === true;
 
     if (isDone) {
-      context.serializedValues.set(id, ["done"]);
+      context.serializedValues.set(id, [STREAMING_DONE]);
       context.checkSerialized();
     } else {
       const ret = context.serialize(iteratorContext.resolved);
@@ -362,22 +363,22 @@ function serializeAsyncIterable(input: AsyncIterable<unknown>, context: Serializ
     }
   }
 
-  const generator = (async function* () {
-    for await (const item of resolveAsyncIterable(input)) {
-      const ret = context.serialize(item);
+  const pushStreamItem = (value: any) => {
+    const items = [...((context.output[id] as any[]) || []), value];
+    context.serializedValues.set(id, items);
+    context.checkSerialized();
+  };
 
-      // Push the new generated value
-      const items = [...((context.output[id] as any[]) || []), ret];
-      context.serializedValues.set(id, items);
-      context.checkSerialized();
-      yield { item };
+  const generator = (async function* () {
+    for await (const value of resolveAsyncIterable(input)) {
+      const ret = context.serialize(value);
+      pushStreamItem(ret);
+      yield { value };
     }
 
     // Notify is done
-    const items = [...((context.output[id] as any[]) || []), "done"];
-    context.serializedValues.set(id, items);
-    context.checkSerialized();
-    yield "done";
+    pushStreamItem(STREAMING_DONE);
+    yield STREAMING_DONE;
   })();
 
   const tracked = trackAsyncIterable(id, generator);

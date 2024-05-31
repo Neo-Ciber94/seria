@@ -7,6 +7,7 @@ import { Tag, isTypedArrayTag } from "../../tag";
 import { trackAsyncIterable } from "../../trackingAsyncIterable";
 import { trackPromise } from "../../trackingPromise";
 import { isPlainObject, base64ToBuffer } from "../../utils";
+import { STREAMING_DONE } from "../constants";
 import { type Revivers } from "../parse";
 
 type Context = {
@@ -172,7 +173,7 @@ export function internal_deserialize(value: string, opts?: DeserializeOptions) {
 
             if (Array.isArray(asyncIteratorValues)) {
               const length = asyncIteratorValues.length - 1;
-              const isDone = asyncIteratorValues[length] === "done";
+              const isDone = asyncIteratorValues[length] === STREAMING_DONE;
 
               const values = isDone ? asyncIteratorValues.slice(0, -1) : asyncIteratorValues;
 
@@ -186,7 +187,7 @@ export function internal_deserialize(value: string, opts?: DeserializeOptions) {
               const trackedAsyncIterator = trackAsyncIterable(
                 id,
                 generator,
-                isDone ? "done" : undefined,
+                isDone ? STREAMING_DONE : undefined,
               );
 
               return trackedAsyncIterator;

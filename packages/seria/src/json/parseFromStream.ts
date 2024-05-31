@@ -4,6 +4,7 @@ import { deferredPromise, type DeferredPromise } from "../deferredPromise";
 import { SeriaError } from "../error";
 import { isTrackingAsyncIterable } from "../trackingAsyncIterable";
 import { isTrackingPromise } from "../trackingPromise";
+import { STREAMING_DONE } from "./constants";
 import { internal_deserialize } from "./internal/deserialize";
 import { type Revivers } from "./parse";
 
@@ -105,7 +106,7 @@ export function internal_parseFromStream(stream: ReadableStream<string>, reviver
               throw new SeriaError(`AsyncIterator sender with id '${data.id}' was not found`);
             }
 
-            const isDone = data.context === "done";
+            const isDone = data.context === STREAMING_DONE;
             for await (const item of data) {
               sender.send(item);
             }

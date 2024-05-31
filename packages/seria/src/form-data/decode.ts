@@ -2,6 +2,7 @@
 // Inspired on: https://github.com/facebook/react/blob/1293047d6063f3508af15e68cca916660ded791e/packages/react-server/src/ReactFlightReplyServer.js#L379-L380
 
 import { SeriaError } from "../error";
+import { STREAMING_DONE } from "../json/constants";
 import { type Revivers } from "../json/parse";
 import { Tag, isTypedArrayTag } from "../tag";
 import { isPlainObject, base64ToBuffer } from "../utils";
@@ -186,7 +187,7 @@ export function decode(
 
             if (Array.isArray(asyncIteratorValues)) {
               const length = asyncIteratorValues.length - 1;
-              const isDone = asyncIteratorValues[length] === "done";
+              const isDone = asyncIteratorValues[length] === STREAMING_DONE;
 
               const values = isDone ? asyncIteratorValues.slice(0, -1) : asyncIteratorValues;
 

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { type TrackingAsyncIterable, trackAsyncIterable } from "../trackingAsyncIterable";
 import { forEachPromise, trackResolvedPromise } from "../trackingPromise";
+import { STREAMING_DONE } from "./constants";
 import { internal_serialize } from "./internal/serialize";
 import { type Replacers } from "./stringify";
 
@@ -61,23 +62,29 @@ export function stringifyToStream(
       if (pendingIteratorsMap.size > 0) {
         const pendingIterators = Array.from(pendingIteratorsMap.values());
         const resolveIterators = pendingIterators.map(async (iter) => {
-          for await (const item of iter) {
-            const isDone = item === "done";
-            const gen = (async function* () {
-              yield item;
-            })(); // FIXME: We can maybe cache this?
-            const onceAsyncIterable = trackAsyncIterable(iter.id, gen, {
-              resolved: isDone ? item : (item as any).item,
+          for await (const next of iter) {
+            // FIXME: We can maybe cache this?
+            const gen = async function* () {
+              yield next;
+            };
+
+            const isDone = next === STREAMING_DONE;
+            const resolved = isDone ? next : (next as any).value;
+            const resolvedAsyncIterable = trackAsyncIterable(iter.id, gen(), {
+              resolved,
               isDone,
             });
 
-            const serializedAsyncIterator = internal_serialize(onceAsyncIterable, {
+            const serializedAsyncIterator = internal_serialize(resolvedAsyncIterable, {
               initialId: iter.id,
               replacers,
             });
 
+            // FIXME: We should not have any pending promises or async iterators at this point
             await Promise.all(serializedAsyncIterator.pendingPromises);
-            for await (const _ of serializedAsyncIterator.pendingIterators) { /* */ }
+            for await (const _ of serializedAsyncIterator.pendingIterators) {
+              /* */
+            }
 
             const genJson = JSON.stringify(serializedAsyncIterator.output, null, space);
             controller.enqueue(`${genJson}\n\n`);
