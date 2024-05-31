@@ -38,9 +38,7 @@ expect.extend({
       actual: `position ${lastIndex}: ${expectedItem}`,
       expected: `position ${lastIndex}: ${receivedItem}`,
       message: () =>
-        `Async iterator ${
-          isNot ? "match" : "doesn't match"
-        } sequence: ${JSON.stringify(arr)}`,
+        `Async iterator ${isNot ? "match" : "doesn't match"} sequence: ${JSON.stringify(arr)}`,
     };
   },
 });

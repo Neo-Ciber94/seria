@@ -63,7 +63,7 @@ beforeAll(() => {
         hostname: "127.0.0.1",
         port: PORT,
       },
-      () => resolve()
+      () => resolve(),
     );
   });
 });
@@ -114,20 +114,16 @@ describe("Server and client FormData", () => {
       new Map([
         ["Ikuyo Kita", "Kita-chan"],
         ["Seika Nijika", "Nijika"],
-      ])
+      ]),
     );
 
     expect(mockCharacter?.money).toStrictEqual(1000n);
-    await expect(mockCharacter?.futureGoalPromise).resolves.toStrictEqual(
-      "Become a Rock Star!"
-    );
+    await expect(mockCharacter?.futureGoalPromise).resolves.toStrictEqual("Become a Rock Star!");
     expect(mockCharacter?.attachments).toBeTruthy();
     expect(mockCharacter?.photo).toBeTruthy();
 
     // Check if file exists
-    expect(
-      fs.statSync(path.join(__dirname, "temp", "bocchi.jpg")).isFile
-    ).toBeTruthy();
+    expect(fs.statSync(path.join(__dirname, "temp", "bocchi.jpg")).isFile).toBeTruthy();
   });
 });
 

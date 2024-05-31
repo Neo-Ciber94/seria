@@ -3,13 +3,7 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
-import {
-  parse,
-  parseFromStream,
-  stringify,
-  stringifyAsync,
-  stringifyToStream,
-} from "../src";
+import { parse, parseFromStream, stringify, stringifyAsync, stringifyToStream } from "../src";
 import { stream } from "hono/streaming";
 import { delay } from "../src/utils";
 
@@ -82,7 +76,7 @@ beforeAll(() => {
         hostname: "127.0.0.1",
         port: PORT,
       },
-      () => resolve()
+      () => resolve(),
     );
   });
 });

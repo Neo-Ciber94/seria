@@ -30,7 +30,7 @@ interface TypedArrayLike extends ArrayBufferView {
 
 export function base64ToBuffer<T extends TypedArrayLike>(
   base64String: string,
-  Constructor: new (buffer: ArrayBuffer) => T
+  Constructor: new (buffer: ArrayBuffer) => T,
 ): T {
   const binaryString = atob(base64String);
   const bytes = new Uint8Array(binaryString.length);
@@ -42,5 +42,4 @@ export function base64ToBuffer<T extends TypedArrayLike>(
   return new Constructor(bytes.buffer);
 }
 
-export const delay = (ms: number) =>
-  new Promise<void>((resolve) => setTimeout(resolve, ms));
+export const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));

@@ -81,9 +81,7 @@ describe("Encode value", () => {
 
     const value = await encodeAsync(set);
     expect(value.get("0")).toStrictEqual(`"$W1"`);
-    expect(value.get("1")).toStrictEqual(
-      `[1,"$$Mimimi",true,null,"$undefined"]`
-    );
+    expect(value.get("1")).toStrictEqual(`[1,"$$Mimimi",true,null,"$undefined"]`);
   });
 
   test("Encode map", async () => {
@@ -98,7 +96,7 @@ describe("Encode value", () => {
     const value = await encodeAsync(map);
     expect(value.get("0")).toStrictEqual(`"$Q1"`);
     expect(value.get("1")).toStrictEqual(
-      `[["$$number",1],["$$text","$$hello"],["$$boolean",true],["$$null",null],["$$undefined","$undefined"]]`
+      `[["$$number",1],["$$text","$$hello"],["$$boolean",true],["$$null",null],["$$undefined","$undefined"]]`,
     );
   });
 

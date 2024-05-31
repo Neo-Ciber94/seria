@@ -4,7 +4,7 @@ import { internal_serialize, type SerializeContext } from "./internal/serialize"
 
 export type Replacers = {
   [tag: string]: (value: unknown, ctx: SerializeContext) => unknown | void;
-}
+};
 
 /**
  * Converts a value to a json string.
@@ -14,18 +14,11 @@ export type Replacers = {
  * @returns The json string.
  * @throws If the promise contains any promise. Use `stringifyAsync` or `stringifyToStream` to convert value with promises.
  */
-export function stringify(
-  value: unknown,
-  replacers?: Replacers | null,
-  space?: number | string
-) {
-  const { output, pendingPromises, pendingIterators } = internal_serialize(
-    value,
-    {
-      replacers,
-      space,
-    }
-  );
+export function stringify(value: unknown, replacers?: Replacers | null, space?: number | string) {
+  const { output, pendingPromises, pendingIterators } = internal_serialize(value, {
+    replacers,
+    space,
+  });
 
   if (pendingPromises.length > 0) {
     throw new SeriaError("Serialiation result have pending promises");
@@ -37,4 +30,3 @@ export function stringify(
 
   return JSON.stringify(output, null, space);
 }
-

@@ -54,7 +54,7 @@ describe("stringify object", () => {
     expect(parsed.map).toStrictEqual("$Q4");
     expect(parsed.nestedObject).toStrictEqual("$R5");
 
-    expect(indices[2]).toStrictEqual([1, 2, 3])
+    expect(indices[2]).toStrictEqual([1, 2, 3]);
 
     expect(indices[3]).toStrictEqual([1, "$$Erika", true, null, "$undefined"]);
 
@@ -70,10 +70,9 @@ describe("stringify object", () => {
       x: "$$bear",
       y: 23,
       z: true,
-    })
-
+    });
   });
-})
+});
 
 describe("stringify promise", () => {
   test("Should throw on pending promise", () => {
@@ -110,7 +109,7 @@ describe("stringify promise", () => {
       (async () => {
         await new Promise((resolve) => setTimeout(resolve, 50));
         return new Promise<number>((resolve) => resolve(34));
-      })()
+      })(),
     );
 
     const data = await stringifyAsync(promise);
@@ -132,9 +131,7 @@ describe("stringify promise", () => {
     const reader = stream.getReader();
 
     const firstChunk = (await reader.read()).value!;
-    expect(firstChunk).toStrictEqual(
-      `["$R1",{"num":24,"text":"$$hello","promise":"$@2"}]\n\n`
-    );
+    expect(firstChunk).toStrictEqual(`["$R1",{"num":24,"text":"$$hello","promise":"$@2"}]\n\n`);
 
     const p1 = JSON.parse(firstChunk)[1];
     expect(p1).toBeTruthy();
@@ -165,9 +162,7 @@ describe("stringify promise", () => {
     const reader = stream.getReader();
 
     const firstChunk = (await reader.read()).value!;
-    expect(firstChunk).toStrictEqual(
-      `["$R1",{"num":"$@2","text":"$@3","promise":"$@4"}]\n\n`
-    );
+    expect(firstChunk).toStrictEqual(`["$R1",{"num":"$@2","text":"$@3","promise":"$@4"}]\n\n`);
 
     const secondChunk = (await reader.read()).value!;
     expect(secondChunk).toStrictEqual(`["$@2",null,49]\n\n`);
@@ -177,9 +172,7 @@ describe("stringify promise", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 50));
     const forthChunk = (await reader.read()).value!;
-    expect(forthChunk).toStrictEqual(
-      `["$@4",null,null,null,"$R5",{"name":"$$Ayaka"}]\n\n`
-    );
+    expect(forthChunk).toStrictEqual(`["$@4",null,null,null,"$R5",{"name":"$$Ayaka"}]\n\n`);
 
     expect((await reader.read()).done).toBeTruthy();
   });
@@ -298,7 +291,7 @@ describe("stringify async iterator", () => {
     };
 
     const val = await stringifyAsync(gen());
-    console.log({ val })
+    console.log({ val });
     const reader = stringifyToStream(gen()).getReader();
     const chunk_1 = (await reader.read())?.value;
     const chunk_2 = (await reader.read())?.value;
@@ -352,5 +345,3 @@ describe("stringify async iterator", () => {
     expect((await reader.read())?.done).toBeTruthy();
   });
 });
-
-

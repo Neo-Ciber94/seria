@@ -10,7 +10,7 @@ export type TrackingAsyncIterable<T, TContext = unknown> = AsyncIterable<T> & {
 export function trackAsyncIterable<T, TContext = unknown>(
   id: number,
   asyncIterator: AsyncIterable<T>,
-  context?: TContext
+  context?: TContext,
 ): TrackingAsyncIterable<T> {
   return Object.assign(asyncIterator, {
     id,
@@ -19,9 +19,7 @@ export function trackAsyncIterable<T, TContext = unknown>(
   });
 }
 
-export function isTrackingAsyncIterable(
-  value: any
-): value is TrackingAsyncIterable<unknown> {
+export function isTrackingAsyncIterable(value: any): value is TrackingAsyncIterable<unknown> {
   return (
     value != null &&
     typeof value.id === "number" &&

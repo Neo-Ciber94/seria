@@ -15,6 +15,7 @@
     "test": "vitest --run",
     "bench": "vitest bench --run",
     "lint": "eslint ./src/**/*.{js,jsx,ts,tsx}",
+    "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "copy:npm_files": "npx tsx copyNpmFiles.ts",
     "prepublishOnly": "pnpm run copy:npm_files && pnpm run build"
@@ -47,6 +48,7 @@
     "hono": "^4.1.3",
     "jsdom": "^24.0.0",
     "ncp": "^2.0.0",
+    "prettier": "^3.2.5",
     "seroval": "^1.0.7",
     "superjson": "^2.2.1",
     "tsup": "^8.0.2",

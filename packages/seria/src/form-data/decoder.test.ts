@@ -159,7 +159,7 @@ describe("Decode object", async () => {
           new Map([
             ["fruit", "mango"],
             ["color", "yellow"],
-          ])
+          ]),
       ),
       set: Promise.resolve(new Set(["fire", "water", "rock"])),
       nested: Promise.resolve({
@@ -178,12 +178,10 @@ describe("Decode object", async () => {
       new Map([
         ["fruit", "mango"],
         ["color", "yellow"],
-      ])
+      ]),
     );
 
-    await expect(parsed.set).resolves.toEqual(
-      new Set(["fire", "water", "rock"])
-    );
+    await expect(parsed.set).resolves.toEqual(new Set(["fire", "water", "rock"]));
 
     const nested = await parsed.nested;
 
@@ -191,9 +189,7 @@ describe("Decode object", async () => {
     await expect(nested.date).resolves.toStrictEqual(new Date(0));
 
     const obj_with_symbol = await nested.obj_with_symbol;
-    await expect(obj_with_symbol.symbol).resolves.toStrictEqual(
-      Symbol.for("this_is_a_promise")
-    );
+    await expect(obj_with_symbol.symbol).resolves.toStrictEqual(Symbol.for("this_is_a_promise"));
   });
 
   test("Decode obj with form", async () => {
@@ -421,8 +417,8 @@ describe("Decode with reviver and replacer", () => {
     };
 
     const formData = await encodeAsync(obj, {
-      URL: (value) => value instanceof URL ? value.href : undefined,
-      RegExp: (value) => value instanceof RegExp ? value.toString() : undefined,
+      URL: (value) => (value instanceof URL ? value.href : undefined),
+      RegExp: (value) => (value instanceof RegExp ? value.toString() : undefined),
     });
 
     const value: any = decode(formData, {
@@ -431,7 +427,7 @@ describe("Decode with reviver and replacer", () => {
         const body = value.slice(1, value.lastIndexOf("/"));
         const flags = value.slice(value.lastIndexOf("/") + 1);
         return new RegExp(body, flags);
-      }
+      },
     });
 
     expect(value).toStrictEqual({

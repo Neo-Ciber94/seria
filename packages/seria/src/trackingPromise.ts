@@ -12,10 +12,7 @@ export type TrackingPromise<T> = Promise<T> & {
   [TRACKING_PROMISE_SYMBOL]: true;
 };
 
-export function trackPromise<T>(
-  id: number,
-  promise: Promise<T>
-): TrackingPromise<T> {
+export function trackPromise<T>(id: number, promise: Promise<T>): TrackingPromise<T> {
   const tracking = Object.assign(promise, {
     id,
     status: { state: "pending" },
@@ -50,9 +47,7 @@ export function trackResolvedPromise<T>(id: number, data: T): TrackingPromise<T>
   return tracking;
 }
 
-export function isTrackingPromise(
-  value: any
-): value is TrackingPromise<unknown> {
+export function isTrackingPromise(value: any): value is TrackingPromise<unknown> {
   return (
     value != null &&
     typeof value.id === "number" &&
@@ -67,7 +62,7 @@ export async function forEachPromise<T = unknown>(
   callbacks: {
     onResolved: (state: { data: T; id: number }) => void;
     onRejected?: (state: { error: unknown; id: number }) => void;
-  }
+  },
 ) {
   const { onResolved, onRejected } = callbacks;
   const pendingPromises: Promise<void>[] = [];
@@ -88,4 +83,3 @@ export async function forEachPromise<T = unknown>(
 
   await Promise.all(pendingPromises);
 }
-

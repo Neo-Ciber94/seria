@@ -1,4 +1,3 @@
-
 // We are using a format similar to the used in the react source code,
 // the problem is that using more than 1 character may introduce unintended collisions if handle incorrectly,
 // for example: $NaN and $N could case an error if handle incorrectly during deserialization.

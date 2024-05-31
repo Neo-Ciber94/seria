@@ -278,7 +278,7 @@ describe("Parse promises", () => {
           new Map([
             ["fruit", "mango"],
             ["color", "yellow"],
-          ])
+          ]),
       ),
       set: Promise.resolve(new Set(["fire", "water", "rock"])),
       nested: Promise.resolve({
@@ -297,12 +297,10 @@ describe("Parse promises", () => {
       new Map([
         ["fruit", "mango"],
         ["color", "yellow"],
-      ])
+      ]),
     );
 
-    await expect(parsed.set).resolves.toEqual(
-      new Set(["fire", "water", "rock"])
-    );
+    await expect(parsed.set).resolves.toEqual(new Set(["fire", "water", "rock"]));
 
     const nested = await parsed.nested;
 
@@ -310,11 +308,8 @@ describe("Parse promises", () => {
     await expect(nested.date).resolves.toStrictEqual(new Date(0));
 
     const obj_with_symbol = await nested.obj_with_symbol;
-    await expect(obj_with_symbol.symbol).resolves.toStrictEqual(
-      Symbol.for("this_is_a_promise")
-    );
+    await expect(obj_with_symbol.symbol).resolves.toStrictEqual(Symbol.for("this_is_a_promise"));
   });
-
 
   test("Parse resolved Promise", async () => {
     const encoded = await stringifyAsync(Promise.resolve("adios amigos"));
@@ -355,9 +350,11 @@ describe("Parse promises", () => {
 
     const decodedArray = parse(json) as typeof promisesArray;
 
-    await Promise.all(decodedArray.map(async (promise, index) => {
-      await expect(promise).resolves.toStrictEqual(await promisesArray[index]);
-    }));
+    await Promise.all(
+      decodedArray.map(async (promise, index) => {
+        await expect(promise).resolves.toStrictEqual(await promisesArray[index]);
+      }),
+    );
   });
 });
 
@@ -369,20 +366,20 @@ describe("Custom parser with reviver and replacer", () => {
     };
 
     const json = stringify(obj, {
-      URL: (value) => value instanceof URL ? value.href : undefined,
-      RegExp: (value) => value instanceof RegExp ? value.toString() : undefined
+      URL: (value) => (value instanceof URL ? value.href : undefined),
+      RegExp: (value) => (value instanceof RegExp ? value.toString() : undefined),
     });
 
     const value = parse(json, {
-      URL: raw => {
+      URL: (raw) => {
         return new URL(raw as string);
       },
-      RegExp: raw => {
+      RegExp: (raw) => {
         const value = raw as string;
         const body = value.slice(1, value.lastIndexOf("/"));
         const flags = value.slice(value.lastIndexOf("/") + 1);
         return new RegExp(body, flags);
-      }
+      },
     }) as typeof obj;
 
     expect(value).toStrictEqual({
@@ -438,9 +435,7 @@ describe("Parse async iterator", () => {
     }
 
     const stream = stringifyToStream(gen());
-    const value = (await parseFromStream(
-      stream
-    )) as TrackingAsyncIterable<unknown>;
+    const value = (await parseFromStream(stream)) as TrackingAsyncIterable<unknown>;
     const iter = value[Symbol.asyncIterator]();
 
     expect((await iter.next()).value).toStrictEqual(1);
@@ -522,9 +517,7 @@ describe("Streaming using timers", () => {
     }
 
     const stream = stringifyToStream(range(3));
-    const iter = (await parseFromStream(
-      stream
-    )) as AsyncIterableIterator<number>;
+    const iter = (await parseFromStream(stream)) as AsyncIterableIterator<number>;
 
     vi.advanceTimersByTime(1000);
     expect((await iter.next()).value).toStrictEqual(0);
@@ -557,15 +550,19 @@ describe("Parse references", () => {
   });
 
   test("Should parse array with same reference", () => {
-    const obj = { name: 'Yatora Yaguchi' };
-    const characters = [obj, obj, obj]
+    const obj = { name: "Yatora Yaguchi" };
+    const characters = [obj, obj, obj];
 
     const encoded = stringify(characters);
     const decoded = parse(encoded) as typeof characters;
 
-    expect(decoded).toStrictEqual([{ name: 'Yatora Yaguchi' }, { name: 'Yatora Yaguchi' }, { name: 'Yatora Yaguchi' }]);
-    expect(decoded[0]).toBe(decoded[1])
-    expect(decoded[1]).toBe(decoded[2])
+    expect(decoded).toStrictEqual([
+      { name: "Yatora Yaguchi" },
+      { name: "Yatora Yaguchi" },
+      { name: "Yatora Yaguchi" },
+    ]);
+    expect(decoded[0]).toBe(decoded[1]);
+    expect(decoded[1]).toBe(decoded[2]);
   });
 
   test("Should parse complex object with references", () => {
@@ -575,7 +572,7 @@ describe("Parse references", () => {
       array: [obj, obj],
       map: new Map([["key", obj]]),
       set: new Set([obj]),
-    }
+    };
 
     const json = stringify(complex);
     const decoded = parse(json) as typeof complex;
@@ -585,7 +582,7 @@ describe("Parse references", () => {
       self: { value: 69 },
       array: [{ value: 69 }, { value: 69 }],
       map: new Map([["key", { value: 69 }]]),
-      set: new Set([{ value: 69 }])
+      set: new Set([{ value: 69 }]),
     });
-  })
-})
+  });
+});

@@ -18,4 +18,3 @@ export function parse(value: string, revivers?: Revivers): unknown {
   const result = internal_deserialize(value, { revivers });
   return result.data;
 }
-

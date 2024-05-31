@@ -20,9 +20,7 @@ const obj = {
     [2, "two"],
     [3, "three"],
   ]),
-
 } as const;
-
 
 describe("Benchmark stringify", () => {
   bench("seria.stringify", () => {
@@ -61,6 +59,6 @@ describe("Benchmark parse", () => {
   });
 
   bench("seroval.deserialize", () => {
-    const _value = seroval.deserialize(serovalJson)
+    const _value = seroval.deserialize(serovalJson);
   });
 });
