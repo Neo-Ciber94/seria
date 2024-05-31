@@ -13,7 +13,7 @@ type Context = {
   references: readonly unknown[];
 };
 
-type Options = {
+type DeserializeOptions = {
   deferPromises?: boolean;
   revivers?: Revivers;
 };
@@ -21,7 +21,7 @@ type Options = {
 /**
  * @internal
  */
-export function internal_deserialize(value: string, opts?: Options) {
+export function internal_deserialize(value: string, opts?: DeserializeOptions) {
   const { deferPromises = false, revivers } = opts || {};
   const pendingPromises = new Map<number, DeferredPromise<unknown>>();
   const pendingChannels = new Map<number, Sender<unknown>>();

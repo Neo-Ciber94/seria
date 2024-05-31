@@ -77,9 +77,7 @@ export function stringifyToStream(
             });
 
             await Promise.all(serializedAsyncIterator.pendingPromises);
-            for await (const _ of serializedAsyncIterator.pendingIterators) {
-              /* */
-            }
+            for await (const _ of serializedAsyncIterator.pendingIterators) { /* */ }
 
             const genJson = JSON.stringify(serializedAsyncIterator.output, null, space);
             controller.enqueue(`${genJson}\n\n`);
