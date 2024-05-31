@@ -42,4 +42,8 @@ export function base64ToBuffer<T extends TypedArrayLike>(
   return new Constructor(bytes.buffer);
 }
 
+export function getType(obj: unknown) {
+  return Object.prototype.toString.call(obj);
+}
+
 export const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));

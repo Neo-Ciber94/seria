@@ -5,13 +5,13 @@ import { SeriaError } from "../error";
 import { STREAMING_DONE } from "../json/constants";
 import { type Revivers } from "../json/parse";
 import { Tag, isTypedArrayTag } from "../tag";
-import { isPlainObject, base64ToBuffer } from "../utils";
+import { isPlainObject, base64ToBuffer, getType } from "../utils";
 
 // The browser `FormData` is assignable to this one
 import type { FormData as UndiciFormData } from "undici";
 
 type DecodeContext = {
-  references: FormData;
+  encoded: FormData;
 };
 
 type DecodeOptions = {
@@ -98,8 +98,11 @@ export function decode(
             return -0;
           } else if (maybeTag === Tag.NaN_) {
             return NaN;
-          } else if (maybeTag[0] === Tag.Object) {
-            const id = input.slice(2);
+          }
+
+          const id = input.slice(2);
+
+          if (maybeTag[0] === Tag.Object) {
             if (references.has(id)) {
               return references.get(id);
             }
@@ -117,7 +120,6 @@ export function decode(
 
             return obj;
           } else if (maybeTag[0] === Tag.Array) {
-            const id = input.slice(2);
             const arr: any[] = [];
             const raw = encoded.get(id);
             const values = JSON.parse(String(raw)); // This is stored as an Array<string>
@@ -130,7 +132,6 @@ export function decode(
 
             return arr;
           } else if (maybeTag[0] === Tag.Set) {
-            const id = input.slice(2);
             const set = new Set<any>();
 
             const values = encoded.get(id);
@@ -145,7 +146,6 @@ export function decode(
 
             return set;
           } else if (maybeTag[0] === Tag.Map) {
-            const id = input.slice(2);
             const map = new Map<any, any>();
 
             const values = encoded.get(id);
@@ -162,7 +162,6 @@ export function decode(
 
             return map;
           } else if (maybeTag[0] === Tag.Promise) {
-            const id = input.slice(2);
             const rawValue = encoded.get(id);
 
             if (!rawValue) {
@@ -176,7 +175,6 @@ export function decode(
               throw new SeriaError("Unable to resolve promise value");
             }
           } else if (maybeTag[0] === Tag.AsyncIterator) {
-            const id = input.slice(2);
             const json = encoded.get(id);
 
             if (!json) {
@@ -204,7 +202,6 @@ export function decode(
             }
           } else if (maybeTag[0] === Tag.FormData) {
             const formData = new FormDataConstructor();
-            const id = input.slice(2);
 
             encoded.forEach((entry, key) => {
               const entryKey = `${id}_`;
@@ -216,7 +213,6 @@ export function decode(
 
             return formData;
           } else if (maybeTag[0] === Tag.File) {
-            const id = input.slice(2);
             const file = encoded.get(`${id}_file`);
 
             if (!file) {
@@ -226,7 +222,7 @@ export function decode(
             return file;
           } else if (isTypedArrayTag(maybeTag[0])) {
             return deserializeBuffer(maybeTag[0], input, {
-              references: encoded,
+              encoded,
             });
           } else {
             throw new SeriaError(`Unknown reference value: ${input}`);
@@ -239,7 +235,7 @@ export function decode(
         if (input === null) {
           return null;
         } else {
-          throw new SeriaError(`Invalid object value: ${JSON.stringify(input)}`);
+          throw new SeriaError(`Invalid object value: ${getType(input)}`);
         }
       }
       default:
@@ -253,7 +249,7 @@ export function decode(
 function deserializeBuffer(tag: Tag, input: string, context: DecodeContext) {
   const getBufferData = () => {
     const id = input.slice(2);
-    const data = context.references.get(id);
+    const data = context.encoded.get(id);
     if (!data) {
       throw new SeriaError(`Unable to get '${input}' buffer data`);
     }

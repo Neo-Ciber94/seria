@@ -6,7 +6,7 @@ import { SeriaError } from "../../error";
 import { Tag, isTypedArrayTag } from "../../tag";
 import { trackAsyncIterable } from "../../trackingAsyncIterable";
 import { trackPromise } from "../../trackingPromise";
-import { isPlainObject, base64ToBuffer } from "../../utils";
+import { isPlainObject, base64ToBuffer, getType } from "../../utils";
 import { STREAMING_DONE } from "../constants";
 import { type Revivers } from "../parse";
 
@@ -209,7 +209,7 @@ export function internal_deserialize(value: string, opts?: DeserializeOptions) {
         if (input === null) {
           return null;
         } else {
-          throw new SeriaError(`Invalid object value: ${JSON.stringify(input)}`);
+          throw new SeriaError(`Invalid object value: ${getType(input)}`);
         }
       }
       default:

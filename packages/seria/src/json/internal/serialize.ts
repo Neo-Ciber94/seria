@@ -7,7 +7,7 @@ import {
   trackAsyncIterable,
 } from "../../trackingAsyncIterable";
 import { type TrackingPromise, isTrackingPromise, trackPromise } from "../../trackingPromise";
-import { isPlainObject, bufferToBase64 } from "../../utils";
+import { isPlainObject, bufferToBase64, getType } from "../../utils";
 import { STREAMING_DONE } from "../constants";
 import { type Replacers } from "../stringify";
 
@@ -168,7 +168,7 @@ export function internal_serialize(value: unknown, opts: SerializeOptions) {
         } else if (input instanceof DataView) {
           return serializeTypedArray(Tag.DataView, input, context);
         } else {
-          throw new SeriaError(`Unable to serialize value: ${JSON.stringify(input)}`);
+          throw new SeriaError(`Unable to serialize value: ${getType(input)}`);
         }
       }
       case "function": {
