@@ -49,10 +49,7 @@ export async function parseFromStream(stream: ReadableStream<string>, revivers?:
   return deferred.promise;
 }
 
-/**
- * @internal
- */
-export function internal_parseFromStream(stream: ReadableStream<string>, revivers?: Revivers) {
+function internal_parseFromStream(stream: ReadableStream<string>, revivers?: Revivers) {
   const promisesMap = new Map<number, DeferredPromise<unknown>>();
   const channelsMap = new Map<number, Sender<unknown>>();
   const reader = stream.getReader();

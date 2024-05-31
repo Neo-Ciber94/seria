@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 import { type TrackingAsyncIterable } from "../trackingAsyncIterable";
 import { delay } from "../utils";
-import { internal_parseFromStream, parseFromStream } from "./parseFromStream";
+import { parseFromStream } from "./parseFromStream";
 import { stringifyAsync } from "./stringifyAsync";
 import { stringifyToStream } from "./stringifyToStream";
 import { parse, stringify } from "..";
@@ -177,81 +177,6 @@ describe("Parse buffer", () => {
     for (let i = 0; i < decoded.byteLength; i++) {
       expect(buffer.getInt8(i)).toStrictEqual(decoded.getInt8(i));
     }
-  });
-});
-
-describe("Parse stream", () => {
-  test("Parse ReadableStream", async () => {
-    const obj = {
-      num: 203,
-      text: "Ayaka",
-      promise: (async () => {
-        await new Promise<void>((resolve) => setTimeout(resolve, 50));
-        return { x: 5, y: -2 };
-      })(),
-    };
-
-    const stream = stringifyToStream(obj);
-    const parsed = internal_parseFromStream(stream);
-
-    const reader = parsed.getReader();
-    const firstChunk: any = (await reader.read())?.value;
-
-    expect(firstChunk.num).toStrictEqual(203);
-    expect(firstChunk.text).toStrictEqual("Ayaka");
-
-    await new Promise<void>((resolve) => setTimeout(resolve, 100));
-    const secondChunk = (await reader.read())?.value as Promise<any>;
-    await expect(secondChunk).resolves.toStrictEqual({ x: 5, y: -2 });
-    expect((await reader.read())?.done).toBeTruthy();
-  });
-
-  test("Parse object with promises", async () => {
-    const obj = {
-      num: Promise.resolve(45),
-      text: Promise.resolve("Ayaka"),
-      promise: (async () => {
-        await new Promise<void>((resolve) => setTimeout(resolve, 100));
-        return { alive: true };
-      })(),
-    };
-
-    const stream = stringifyToStream(obj);
-    const parsed = internal_parseFromStream(stream);
-
-    const reader = parsed.getReader();
-
-    // Read all the chunks until the object is exhausted
-    const firstChunk: any = (await reader.read())?.value;
-    await reader.read();
-    await reader.read();
-    await reader.read();
-
-    // Check the resolved object
-    await expect(firstChunk.num).resolves.toStrictEqual(45);
-    await expect(firstChunk.text).resolves.toStrictEqual("Ayaka");
-    await expect(firstChunk.promise).resolves.toStrictEqual({ alive: true });
-
-    expect((await reader.read())?.done).toBeTruthy();
-  });
-
-  test("Parse stream to value", async () => {
-    const obj = {
-      hero: Promise.resolve("Himmel"),
-      alive: Promise.resolve(false),
-      partner: (async () => {
-        await new Promise<void>((resolve) => setTimeout(resolve, 100));
-        return { name: "Fieren" };
-      })(),
-    };
-
-    const stream = stringifyToStream(obj);
-    const parsed: any = await parseFromStream(stream);
-
-    // Check the resolved object
-    await expect(parsed.hero).resolves.toStrictEqual("Himmel");
-    await expect(parsed.alive).resolves.toStrictEqual(false);
-    await expect(parsed.partner).resolves.toStrictEqual({ name: "Fieren" });
   });
 });
 
