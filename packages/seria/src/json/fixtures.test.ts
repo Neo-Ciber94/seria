@@ -271,4 +271,27 @@ describe("Basic stringify/parse", () => {
     const value = parse(json);
     expect(value).toStrictEqual(arrayWithSameReference);
   });
+
+  test("Should stringify/parse complex object with same reference", () => {
+    const obj = { value: 69 };
+    const complex = {
+      self: obj,
+      array: [obj, obj],
+      map: new Map([["key", obj]]),
+      set: new Set([obj]),
+    };
+
+    const json = stringify(complex);
+    expect(json).toStrictEqual(
+      '["$R1",{"self":"$R2","array":"$A3","map":"$Q4","set":"$W5"},{"value":69},["$R2","$R2"],[["$$key","$R2"]],["$R2"]]',
+    );
+    const decoded = parse(json) as typeof complex;
+
+    expect(decoded).toStrictEqual({
+      self: { value: 69 },
+      array: [{ value: 69 }, { value: 69 }],
+      map: new Map([["key", { value: 69 }]]),
+      set: new Set([{ value: 69 }]),
+    });
+  });
 });
