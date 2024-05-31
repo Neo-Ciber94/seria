@@ -4,7 +4,7 @@ import { type Replacers } from "./stringify";
 /**
  * Converts a value to a json string and resolve all its promises.
  * @param value The value to convert.
- * @param replacers A function that encode a custom value.
+ * @param replacers An object with custom serializers.
  * @param space Adds indentation, white space to the json values line-breaks.
  * @returns The json string.
  */

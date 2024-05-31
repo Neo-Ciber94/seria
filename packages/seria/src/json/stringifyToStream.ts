@@ -8,7 +8,7 @@ import { type Replacers } from "./stringify";
 /**
  * Convert a value to a `ReadableStream` that stringify each value.
  * @param value The value to convert.
- * @param replacers A function that encode a custom value.
+ * @param replacers An object with custom serializers.
  * @param space Adds indentation, white space to the json values line-breaks.
  * @returns A stream that stringify each value.
  */

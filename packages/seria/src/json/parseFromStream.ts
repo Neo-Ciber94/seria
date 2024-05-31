@@ -11,7 +11,7 @@ import { type Revivers } from "./parse";
 /**
  * Takes a stream and parse each value until it resolves.
  * @param stream The stream to parse.
- * @param revivers A function to convert a value.
+ * @param revivers An object with custom deserializers.
  * @returns A promise that resolve to the parsed value.
  */
 export async function parseFromStream(stream: ReadableStream<string>, revivers?: Revivers) {

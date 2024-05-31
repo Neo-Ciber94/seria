@@ -11,7 +11,7 @@ export type Revivers = {
 /**
  * Parse a `json` string to a value.
  * @param value The `json` value to parse.
- * @param revivers A function to convert a value.
+ * @param revivers An object with custom deserializers.
  * @returns The parsed value.
  */
 export function parse(value: string, revivers?: Revivers): unknown {

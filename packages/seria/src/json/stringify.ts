@@ -9,7 +9,7 @@ export type Replacers = {
 /**
  * Converts a value to a json string.
  * @param value The value to convert.
- * @param replacers A function that encode a custom value.
+ * @param replacers An object with custom serializers.
  * @param space Adds indentation, white space to the json values line-breaks.
  * @returns The json string.
  * @throws If the promise contains any promise. Use `stringifyAsync` or `stringifyToStream` to convert value with promises.
