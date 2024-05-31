@@ -193,7 +193,7 @@ describe("Basic stringify/parse", () => {
       new Map<any, any>([
         [3, true],
         [undefined, "adios"],
-        [-2n, new Date(2000, 4, 3, 0, 0, 0)],
+        [-2n, date],
         [null, false],
       ]),
     );
