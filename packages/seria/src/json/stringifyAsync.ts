@@ -2,8 +2,8 @@ import { internal_serialize } from "./internal/serialize";
 import { type Replacers } from "./stringify";
 
 /**
- * Converts a value to a json string and resolve all its promises.
- * @param value The value to convert.
+ * Serialize a value to a json string and resolve all its promises.
+ * @param value The value to serialize.
  * @param replacers An object with custom serializers.
  * @param space Adds indentation, white space to the json values line-breaks.
  * @returns The json string.

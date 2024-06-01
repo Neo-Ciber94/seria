@@ -3,6 +3,9 @@ import { test, describe, expect } from "vitest";
 import { stringify } from "./stringify";
 import { parse } from "./parse";
 import { stringifyAsync } from "./stringifyAsync";
+import { stringifyToResumableStream } from "./stringifyToStream";
+import { parseFromResumableStream } from "./parseFromStream";
+import { delay } from "../utils";
 
 describe("Basic stringify/parse", () => {
   test("Should stringify/parse number", () => {
@@ -295,5 +298,82 @@ describe("Basic stringify/parse", () => {
       map: new Map([["key", { value: 69 }]]),
       set: new Set([{ value: 69 }]),
     });
+  });
+});
+
+describe("Resumable stream", () => {
+  test("Should stringify/parse object as resumable stream without pending values", () => {
+    const obj = { a: 23, b: "Mori", c: true };
+    const { json, resumeStream } = stringifyToResumableStream(obj);
+
+    expect(json).toStrictEqual('["$R1",{"a":23,"b":"$$Mori","c":true}]');
+    expect(resumeStream).toBeNull();
+
+    const value = parseFromResumableStream(json, resumeStream);
+    expect(value).toStrictEqual({ a: 23, b: "Mori", c: true });
+  });
+
+  test("Should stringify/parse promise as resumable stream", async () => {
+    const promise = delay(100)
+      .then(() => 5)
+      .then((x) => (x * 2).toString());
+
+    const { json, resumeStream } = stringifyToResumableStream(promise);
+
+    expect(json).toStrictEqual('["$@1"]');
+    expect(resumeStream).not.toBeNull();
+
+    const value = parseFromResumableStream(json, resumeStream) as typeof promise;
+    await expect(value).resolves.toStrictEqual("10");
+  });
+
+  test("Should stringify/parse object as resumable stream with pending promise", async () => {
+    const obj = { p: Promise.resolve(34), s: "Ryuji" };
+    const { json, resumeStream } = stringifyToResumableStream(obj);
+
+    expect(json).toStrictEqual('["$R1",{"p":"$@2","s":"$$Ryuji"}]');
+    expect(resumeStream).not.toBeNull();
+
+    const value = parseFromResumableStream(json, resumeStream) as typeof obj;
+    expect(value.s).toStrictEqual("Ryuji");
+    await expect(value.p).resolves.toStrictEqual(34);
+  });
+
+  test("Should stringify/parse array as resumable stream with pending promises", async () => {
+    const array = [
+      Promise.resolve(true),
+      delay(200).then(() => Promise.resolve({ x: 1 })),
+      Promise.resolve("Da Vinci"),
+    ];
+    const { json, resumeStream } = stringifyToResumableStream(array);
+
+    expect(json).toStrictEqual('["$A1",["$@2","$@3","$@4"]]');
+    expect(resumeStream).not.toBeNull();
+
+    const value = parseFromResumableStream(json, resumeStream) as typeof array;
+    await expect(value[0]).resolves.toStrictEqual(true);
+    await expect(value[1]).resolves.toStrictEqual({ x: 1 });
+    await expect(value[2]).resolves.toStrictEqual("Da Vinci");
+  });
+
+  test("Should strigify/parse async iterator as resumable stream", async () => {
+    async function* gen() {
+      yield { x: true };
+      yield delay(100).then(() => "Yatora Yaguchi");
+      yield new Set([false, 209090909n]);
+    }
+
+    const { json, resumeStream } = stringifyToResumableStream(gen());
+
+    expect(json).toStrictEqual('["$#1"]');
+    expect(resumeStream).not.toBeNull();
+
+    const value = parseFromResumableStream(json, resumeStream) as ReturnType<typeof gen>;
+    const iter = value[Symbol.asyncIterator]();
+
+    expect((await iter.next()).value).toStrictEqual({ x: true });
+    expect((await iter.next()).value).toStrictEqual("Yatora Yaguchi");
+    expect((await iter.next()).value).toStrictEqual(new Set([false, 209090909n]));
+    expect((await iter.next()).done).toBeTruthy();
   });
 });

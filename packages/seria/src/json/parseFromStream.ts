@@ -8,6 +8,60 @@ import { STREAMING_DONE } from "./constants";
 import { internal_deserialize } from "./internal/deserialize";
 import { type Revivers } from "./parse";
 
+export function parseFromResumableStream(
+  json: string,
+  resumeStream: ReadableStream<string> | null,
+  revivers?: Revivers,
+) {
+  const { data, pendingChannels, pendingPromises } = internal_deserialize(json, {
+    revivers,
+    deferPromises: true,
+  });
+
+  if (resumeStream == null) {
+    return data;
+  }
+
+  const promisesMap = new Map<number, DeferredPromise<unknown>>();
+  const channelsMap = new Map<number, Sender<unknown>>();
+
+  for (const [id, deferred] of pendingPromises.entries()) {
+    promisesMap.set(id, deferred);
+  }
+
+  for (const [id, channelSender] of pendingChannels.entries()) {
+    channelsMap.set(id, channelSender);
+  }
+
+  const resumeChunks = {
+    channelsMap,
+    promisesMap,
+  };
+
+  const stream = parsePendingChunks(resumeChunks, resumeStream, revivers);
+  const reader = stream.getReader();
+
+  void Promise.resolve().then(async () => {
+    const promises: Promise<any>[] = [];
+
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) {
+        break;
+      }
+
+      if (value instanceof Promise) {
+        promises.push(value);
+      }
+    }
+
+    await Promise.all(promises); // If a promise reject will be here and not in the object?
+  });
+
+  return data;
+}
+
 /**
  * Takes a stream and parse each value until it resolves.
  * @param stream The stream to parse.
@@ -15,9 +69,9 @@ import { type Revivers } from "./parse";
  * @returns A promise that resolve to the parsed value.
  */
 export async function parseFromStream(stream: ReadableStream<string>, revivers?: Revivers) {
-  const reader = internal_parseFromStream(stream, revivers).getReader();
-  let resolved = false;
+  const reader = createParseStream(stream, revivers).getReader();
   const deferred = deferredPromise();
+  let resolved = false;
 
   void Promise.resolve().then(async () => {
     const promises: Promise<any>[] = [];
@@ -25,7 +79,8 @@ export async function parseFromStream(stream: ReadableStream<string>, revivers?:
     // eslint-disable-next-line no-constant-condition
     while (true) {
       const { done, value } = await reader.read();
-      if (done || value === undefined) {
+
+      if (done) {
         break;
       }
 
@@ -43,15 +98,34 @@ export async function parseFromStream(stream: ReadableStream<string>, revivers?:
       deferred.reject(new SeriaError("Unable to find resolved value"));
     }
 
-    await Promise.all(promises);
+    await Promise.all(promises); // If a promise reject will be here and not in the object?
   });
 
   return deferred.promise;
 }
 
-function internal_parseFromStream(stream: ReadableStream<string>, revivers?: Revivers) {
+function createParseStream(stream: ReadableStream<string>, revivers?: Revivers) {
   const promisesMap = new Map<number, DeferredPromise<unknown>>();
   const channelsMap = new Map<number, Sender<unknown>>();
+  const resumeChunks = {
+    channelsMap,
+    promisesMap,
+  };
+
+  return parsePendingChunks(resumeChunks, stream, revivers);
+}
+
+type ResumeChunks = {
+  promisesMap: Map<number, DeferredPromise<unknown>>;
+  channelsMap: Map<number, Sender<unknown>>;
+};
+
+function parsePendingChunks(
+  resumeChunks: ResumeChunks,
+  stream: ReadableStream<string>,
+  revivers?: Revivers,
+) {
+  const { channelsMap, promisesMap } = resumeChunks;
   const reader = stream.getReader();
 
   return new ReadableStream<unknown>({
