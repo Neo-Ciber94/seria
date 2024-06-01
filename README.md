@@ -93,3 +93,17 @@ Types supported by `seria` in comparison with the standard `JSON` object.
 > Typed Arrays https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Typed_arrays
 
 > `File` and `FormData` are supported on `seria/form-data`.
+
+`seria` also handles:
+
+- `Infinity`, `-Infinity`, `NaN`, `-0`
+- Cyclical references: `obj.self = obj`
+- Repeated references: `[obj, new Set([obj]), new Map([["key", obj]])]`
+- Custom types using `replacers` and `revivers`
+
+## See also
+
+These libraries were used as references to improve `seria` features.
+
+- [devalue](https://www.npmjs.com/package/devalue)
+- [superjson](https://www.npmjs.com/package/seroval)
