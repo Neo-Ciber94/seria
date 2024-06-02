@@ -18,7 +18,7 @@
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "copy:npm_files": "npx tsx copyNpmFiles.ts",
-    "prepublishOnly": "pnpm run copy:npm_files && pnpm run build"
+    "prepublishOnly": "yarn run copy:npm_files && yarn run build"
   },
   "homepage": "https://neo-ciber94.github.io/seria",
   "repository": {
