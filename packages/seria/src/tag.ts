@@ -24,6 +24,7 @@ export const enum Tag {
   // Others
   File = "k",
   AsyncIterator = "#",
+  Error = "E",
 
   // TypedArray
   ArrayBuffer = "B",

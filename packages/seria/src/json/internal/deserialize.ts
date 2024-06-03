@@ -44,40 +44,40 @@ export function internal_deserialize(value: string, opts?: DeserializeOptions) {
         return input;
       case "string": {
         if (input[0] === "$") {
-          const maybeTag = input.slice(1);
+          const tagValue = input.slice(1);
 
           // Custom keys are in the form of: `$_{key}_`
-          if (revivers && maybeTag.startsWith("_")) {
-            const type = maybeTag.slice(1, maybeTag.lastIndexOf("_"));
+          if (revivers && tagValue.startsWith("_")) {
+            const type = tagValue.slice(1, tagValue.lastIndexOf("_"));
             const reviver = revivers[type];
 
             if (reviver == null) {
               throw new SeriaError(`Reviver for key '${type}' was not found`);
             }
 
-            const rawId = maybeTag.slice(type.length + 2);
+            const rawId = tagValue.slice(type.length + 2);
             const id = parseTagId(rawId);
             const val = deserialize(indices[id]);
             return reviver(val);
           }
 
-          if (maybeTag[0] === Tag.String) {
+          if (tagValue[0] === Tag.String) {
             return input.slice(2);
-          } else if (maybeTag[0] === Tag.Symbol) {
+          } else if (tagValue[0] === Tag.Symbol) {
             return Symbol.for(input.slice(2));
-          } else if (maybeTag[0] === Tag.Date) {
+          } else if (tagValue[0] === Tag.Date) {
             return new Date(input.slice(2));
-          } else if (maybeTag[0] === Tag.BigInt) {
+          } else if (tagValue[0] === Tag.BigInt) {
             return BigInt(input.slice(2));
-          } else if (maybeTag === Tag.Undefined) {
+          } else if (tagValue === Tag.Undefined) {
             return undefined;
-          } else if (maybeTag === Tag.Infinity_) {
+          } else if (tagValue === Tag.Infinity_) {
             return Infinity;
-          } else if (maybeTag === Tag.NegativeInfinity) {
+          } else if (tagValue === Tag.NegativeInfinity) {
             return -Infinity;
-          } else if (maybeTag === Tag.NegativeZero) {
+          } else if (tagValue === Tag.NegativeZero) {
             return -0;
-          } else if (maybeTag === Tag.NaN_) {
+          } else if (tagValue === Tag.NaN_) {
             return NaN;
           }
 
@@ -88,7 +88,7 @@ export function internal_deserialize(value: string, opts?: DeserializeOptions) {
             return references.get(id);
           }
 
-          if (maybeTag[0] === Tag.Object) {
+          if (tagValue[0] === Tag.Object) {
             const value = indices[id];
 
             if (isPlainObject(value)) {
@@ -101,7 +101,7 @@ export function internal_deserialize(value: string, opts?: DeserializeOptions) {
             }
 
             return undefined;
-          } else if (maybeTag[0] === Tag.Array) {
+          } else if (tagValue[0] === Tag.Array) {
             const values = indices[id];
 
             if (Array.isArray(values)) {
@@ -115,7 +115,7 @@ export function internal_deserialize(value: string, opts?: DeserializeOptions) {
             }
 
             return undefined;
-          } else if (maybeTag[0] === Tag.Set) {
+          } else if (tagValue[0] === Tag.Set) {
             const values = indices[id];
 
             if (values && Array.isArray(values)) {
@@ -128,7 +128,7 @@ export function internal_deserialize(value: string, opts?: DeserializeOptions) {
             }
 
             return undefined;
-          } else if (maybeTag[0] === Tag.Map) {
+          } else if (tagValue[0] === Tag.Map) {
             const values = indices[id];
 
             if (values && Array.isArray(values)) {
@@ -143,7 +143,11 @@ export function internal_deserialize(value: string, opts?: DeserializeOptions) {
             }
 
             return undefined;
-          } else if (maybeTag[0] === Tag.Promise) {
+          } else if (tagValue[0] === Tag.Error) {
+            const value = indices[id];
+            const message = typeof value === "string" ? value : "";
+            return new Error(message);
+          } else if (tagValue[0] === Tag.Promise) {
             const rawValue = indices[id];
 
             if (rawValue === undefined) {
@@ -162,7 +166,7 @@ export function internal_deserialize(value: string, opts?: DeserializeOptions) {
             } catch {
               throw new SeriaError("Unable to resolve promise value");
             }
-          } else if (maybeTag[0] === Tag.AsyncIterator) {
+          } else if (tagValue[0] === Tag.AsyncIterator) {
             const asyncIteratorValues = indices[id];
 
             if (!asyncIteratorValues) {
@@ -194,8 +198,8 @@ export function internal_deserialize(value: string, opts?: DeserializeOptions) {
             } else {
               throw new SeriaError("Failed to parse async iterator, expected array of values");
             }
-          } else if (isTypedArrayTag(maybeTag[0])) {
-            return deserializeBuffer(maybeTag[0], input, {
+          } else if (isTypedArrayTag(tagValue[0])) {
+            return deserializeBuffer(tagValue[0], input, {
               references: indices,
             });
           } else {

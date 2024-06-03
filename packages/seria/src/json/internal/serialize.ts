@@ -123,6 +123,8 @@ export function internal_serialize(value: unknown, opts: SerializeOptions) {
           return serializePromise(input, context);
         } else if (isAsyncIterable(input)) {
           return serializeAsyncIterable(input, context);
+        } else if (input instanceof Error) {
+          return serializeError(input, context);
         }
         // Serialize FormData
         else if (formData && input instanceof FormData) {
@@ -290,6 +292,13 @@ function serializePlainObject(input: Record<string, unknown>, context: Serialize
   }
 
   return serializeTagValue(Tag.Object, id);
+}
+
+function serializeError(input: Error, context: SerializeContext) {
+  const message = input.message;
+  const id = context.nextId();
+  context.serializedValues.set(id, message);
+  return serializeTagValue(Tag.Error, id);
 }
 
 function serializePromise(input: Promise<any>, context: SerializeContext) {

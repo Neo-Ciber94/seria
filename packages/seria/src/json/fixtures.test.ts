@@ -299,6 +299,24 @@ describe("Basic stringify/parse", () => {
       set: new Set([{ value: 69 }]),
     });
   });
+
+  test("Should stringify/parse error", () => {
+    const error = new Error("Oh oh, something went wrong");
+    const json = stringify(error);
+
+    expect(json).toStrictEqual('["$E1","Oh oh, something went wrong"]');
+    const parsed = parse(json) as Error;
+    expect(parsed).toStrictEqual(new Error("Oh oh, something went wrong"));
+  });
+
+  test("Should stringify/parse other error type", () => {
+    const error = new TypeError("This is a type error");
+    const json = stringify(error);
+
+    expect(json).toStrictEqual('["$E1","This is a type error"]');
+    const parsed = parse(json) as Error;
+    expect(parsed).toStrictEqual(new Error("This is a type error"));
+  })
 });
 
 describe("Resumable stream", () => {
