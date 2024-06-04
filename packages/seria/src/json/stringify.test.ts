@@ -107,7 +107,7 @@ describe("stringify promise", () => {
     expect(json).toStrictEqual('["$@1",{"rejected":"$E2"},"Oh oh"]');
   });
 
-  test("Should stringifyAsync resolved adn rejected promise", async () => {
+  test("Should stringifyAsync resolved and rejected promise", async () => {
     const promises = [Promise.resolve({ x: 10 }), Promise.reject({ error: "This is an error" })];
     const json = await stringifyAsync(promises);
 
