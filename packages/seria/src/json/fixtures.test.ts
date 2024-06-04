@@ -229,7 +229,7 @@ describe("Basic stringify/parse", () => {
 
     const json = await stringifyAsync(obj);
     expect(json).toStrictEqual(
-      '["$R1",{"str":"$$hello","num":42,"null":null,"undefined":"$undefined","truthty":true,"set":"$W2","map":"$Q3","obj":"$R4","promise":"$@5"},[1,"$$set",true],[["$$key","$$value"]],{"x":1,"y":"$$world","z":false},"$$adios amigos"]',
+      '["$R1",{"str":"$$hello","num":42,"null":null,"undefined":"$undefined","truthty":true,"set":"$W2","map":"$Q3","obj":"$R4","promise":"$@5"},[1,"$$set",true],[["$$key","$$value"]],{"x":1,"y":"$$world","z":false},{"resolved":"$$adios amigos"}]',
     );
     const value: any = parse(json);
 

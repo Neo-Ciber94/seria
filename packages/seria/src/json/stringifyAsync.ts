@@ -19,7 +19,7 @@ export async function stringifyAsync(
   });
 
   // We need to resolve promises first in case any return an async iterator
-  await Promise.all(result.pendingPromises);
+  await Promise.allSettled(result.pendingPromises);
 
   // Then we drain all the values on the async iterators
   const iteratorPromises = result.pendingIterators.map(async (gen) => {
@@ -28,6 +28,6 @@ export async function stringifyAsync(
     }
   });
 
-  await Promise.all(iteratorPromises);
+  await Promise.allSettled(iteratorPromises);
   return JSON.stringify(result.output, null, space);
 }

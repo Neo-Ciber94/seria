@@ -112,7 +112,7 @@ describe("Encode value", () => {
     const promise = Promise.resolve(69);
     const value = await encodeAsync(promise);
     expect(value.get("0")).toStrictEqual(`"$@1"`);
-    expect(value.get("1")).toStrictEqual(`69`);
+    expect(value.get("1")).toStrictEqual(`{"resolved":69}`);
   });
 
   test("Encode FormData", async () => {

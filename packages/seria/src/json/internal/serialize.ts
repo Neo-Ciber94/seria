@@ -304,20 +304,38 @@ function serializeError(input: Error, context: SerializeContext) {
 function serializePromise(input: Promise<any>, context: SerializeContext) {
   const id = context.nextId();
 
-  if (isTrackingPromise(input) && input.status.state === "resolved") {
-    const ret = context.serialize(input.status.data);
-    context.serializedValues.set(id, ret);
+  if (isTrackingPromise(input) && input.status.state !== "pending") {
+    switch (input.status.state) {
+      case "resolved": {
+        const resolved = context.serialize(input.status.data);
+        context.serializedValues.set(id, { resolved });
+        break;
+      }
+      case "rejected": {
+        const rejected = context.serialize(input.status.error);
+        context.serializedValues.set(id, { rejected });
+        break;
+      }
+    }
+
     context.checkSerialized(); // Update the values with the new one
     return serializeTagValue(Tag.Promise, id);
   }
 
   // We create a new promise that resolve to the serialized value
-  const resolvingPromise = input.then((value) => {
-    const ret = context.serialize(value);
-    context.serializedValues.set(id, ret);
-    context.checkSerialized(); // Update the values with the new one
-    return value;
-  });
+  const resolvingPromise = input
+    .then((data) => {
+      const resolved = context.serialize(data);
+      context.serializedValues.set(id, { resolved });
+      context.checkSerialized(); // Update the values with the new one
+      return data;
+    })
+    .catch((error) => {
+      const rejected = context.serialize(error);
+      context.serializedValues.set(id, { rejected });
+      context.checkSerialized(); // Update the values with the new one
+      throw error; // We need to rethrow the error, this is an error that should be caught upstream
+    });
 
   const trackingPromise = trackPromise(id, resolvingPromise);
   context.pendingPromisesMap.set(id, trackingPromise);

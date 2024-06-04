@@ -63,46 +63,46 @@ export function decode(
         return input;
       case "string": {
         if (input[0] === "$") {
-          const maybeTag = input.slice(1);
+          const tagValue = input.slice(1);
 
           // Custom keys are in the form of: `$_{key}_`
-          if (revivers && maybeTag.startsWith("_")) {
-            const type = maybeTag.slice(1, maybeTag.lastIndexOf("_"));
+          if (revivers && tagValue.startsWith("_")) {
+            const type = tagValue.slice(1, tagValue.lastIndexOf("_"));
             const reviver = revivers[type];
 
             if (reviver == null) {
               throw new SeriaError(`Reviver for key '${type}' was not found`);
             }
 
-            const id = maybeTag.slice(type.length + 2);
+            const id = tagValue.slice(type.length + 2);
             const raw = JSON.parse(String(encoded.get(id)));
             const val = deserialize(raw);
             return reviver(val);
           }
 
-          if (maybeTag[0] === Tag.String) {
+          if (tagValue[0] === Tag.String) {
             return input.slice(2);
-          } else if (maybeTag[0] === Tag.Symbol) {
+          } else if (tagValue[0] === Tag.Symbol) {
             return Symbol.for(input.slice(2));
-          } else if (maybeTag[0] === Tag.Date) {
+          } else if (tagValue[0] === Tag.Date) {
             return new Date(input.slice(2));
-          } else if (maybeTag[0] === Tag.BigInt) {
+          } else if (tagValue[0] === Tag.BigInt) {
             return BigInt(input.slice(2));
-          } else if (maybeTag === Tag.Undefined) {
+          } else if (tagValue === Tag.Undefined) {
             return undefined;
-          } else if (maybeTag === Tag.Infinity_) {
+          } else if (tagValue === Tag.Infinity_) {
             return Infinity;
-          } else if (maybeTag === Tag.NegativeInfinity) {
+          } else if (tagValue === Tag.NegativeInfinity) {
             return -Infinity;
-          } else if (maybeTag === Tag.NegativeZero) {
+          } else if (tagValue === Tag.NegativeZero) {
             return -0;
-          } else if (maybeTag === Tag.NaN_) {
+          } else if (tagValue === Tag.NaN_) {
             return NaN;
           }
 
           const id = input.slice(2);
 
-          if (maybeTag[0] === Tag.Object) {
+          if (tagValue[0] === Tag.Object) {
             if (references.has(id)) {
               return references.get(id);
             }
@@ -119,7 +119,7 @@ export function decode(
             }
 
             return obj;
-          } else if (maybeTag[0] === Tag.Array) {
+          } else if (tagValue[0] === Tag.Array) {
             const arr: any[] = [];
             const raw = encoded.get(id);
             const values = JSON.parse(String(raw)); // This is stored as an Array<string>
@@ -131,7 +131,7 @@ export function decode(
             }
 
             return arr;
-          } else if (maybeTag[0] === Tag.Set) {
+          } else if (tagValue[0] === Tag.Set) {
             const set = new Set<any>();
 
             const values = encoded.get(id);
@@ -145,7 +145,7 @@ export function decode(
             }
 
             return set;
-          } else if (maybeTag[0] === Tag.Map) {
+          } else if (tagValue[0] === Tag.Map) {
             const map = new Map<any, any>();
 
             const values = encoded.get(id);
@@ -161,20 +161,25 @@ export function decode(
             }
 
             return map;
-          } else if (maybeTag[0] === Tag.Promise) {
-            const rawValue = encoded.get(id);
+          } else if (tagValue[0] === Tag.Promise) {
+            const value = encoded.get(id);
 
-            if (!rawValue) {
+            if (!value) {
               throw new SeriaError("Failed to find promise resolved value");
             }
 
-            try {
-              const resolvedValue = deserialize(JSON.parse(String(rawValue)));
-              return Promise.resolve(resolvedValue);
-            } catch {
+            const promiseResult = JSON.parse(String(value)) as { resolved?: any; rejected?: any };
+
+            if (promiseResult.resolved !== undefined) {
+              const data = deserialize(promiseResult.resolved);
+              return Promise.resolve(data);
+            } else if (promiseResult.rejected !== undefined) {
+              const error = deserialize(promiseResult.rejected);
+              return Promise.resolve(error);
+            } else {
               throw new SeriaError("Unable to resolve promise value");
             }
-          } else if (maybeTag[0] === Tag.AsyncIterator) {
+          } else if (tagValue[0] === Tag.AsyncIterator) {
             const json = encoded.get(id);
 
             if (!json) {
@@ -200,7 +205,7 @@ export function decode(
             } else {
               throw new SeriaError("Failed to parse async iterator, expected array of values");
             }
-          } else if (maybeTag[0] === Tag.FormData) {
+          } else if (tagValue[0] === Tag.FormData) {
             const formData = new FormDataConstructor();
 
             encoded.forEach((entry, key) => {
@@ -212,7 +217,7 @@ export function decode(
             });
 
             return formData;
-          } else if (maybeTag[0] === Tag.File) {
+          } else if (tagValue[0] === Tag.File) {
             const file = encoded.get(`${id}_file`);
 
             if (!file) {
@@ -220,8 +225,8 @@ export function decode(
             }
 
             return file;
-          } else if (isTypedArrayTag(maybeTag[0])) {
-            return deserializeBuffer(maybeTag[0], input, {
+          } else if (isTypedArrayTag(tagValue[0])) {
+            return deserializeBuffer(tagValue[0], input, {
               encoded,
             });
           } else {

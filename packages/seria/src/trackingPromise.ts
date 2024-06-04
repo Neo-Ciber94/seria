@@ -47,6 +47,17 @@ export function trackResolvedPromise<T>(id: number, data: T): TrackingPromise<T>
   return tracking;
 }
 
+export function trackRejectedPromise<T>(id: number, error: T): TrackingPromise<never> {
+  const promise = Promise.reject(error);
+  const tracking = Object.assign(promise, {
+    id,
+    status: { state: "rejected", error },
+    [TRACKING_PROMISE_SYMBOL]: true,
+  }) as TrackingPromise<never>;
+
+  return tracking;
+}
+
 export function isTrackingPromise(value: any): value is TrackingPromise<unknown> {
   return (
     value != null &&
@@ -65,21 +76,23 @@ export async function forEachPromise<T = unknown>(
   },
 ) {
   const { onResolved, onRejected } = callbacks;
-  const pendingPromises: Promise<void>[] = [];
+  const pendingPromises: Promise<unknown>[] = [];
 
   for (const p of promises) {
-    let resolving = p.then((data) => {
-      onResolved({ id: p.id, data });
-    });
+    const resolving = p
+      .then((data) => {
+        onResolved({ id: p.id, data });
+      })
+      .catch((error) => {
+        if (onRejected) {
+          onRejected({ id: p.id, error });
+        }
 
-    if (onRejected) {
-      resolving = resolving.catch((error) => {
-        onRejected({ id: p.id, error });
+        return null;
       });
-    }
 
     pendingPromises.push(resolving);
   }
 
-  await Promise.all(pendingPromises);
+  await Promise.allSettled(pendingPromises);
 }

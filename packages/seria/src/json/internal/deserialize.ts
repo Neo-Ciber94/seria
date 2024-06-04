@@ -148,9 +148,9 @@ export function internal_deserialize(value: string, opts?: DeserializeOptions) {
             const message = typeof value === "string" ? value : "";
             return new Error(message);
           } else if (tagValue[0] === Tag.Promise) {
-            const rawValue = indices[id];
+            const value = indices[id];
 
-            if (rawValue === undefined) {
+            if (value === undefined) {
               if (deferPromises) {
                 const deferred = deferredPromise();
                 pendingPromises.set(id, deferred);
@@ -160,10 +160,15 @@ export function internal_deserialize(value: string, opts?: DeserializeOptions) {
               throw new SeriaError("Failed to find promise resolved value");
             }
 
-            try {
-              const resolvedValue = deserialize(rawValue);
-              return trackPromise(id, Promise.resolve(resolvedValue));
-            } catch {
+            const promiseResult = value as { resolved?: any; rejected?: any };
+
+            if (promiseResult.resolved !== undefined) {
+              const data = deserialize(promiseResult.resolved);
+              return trackPromise(id, Promise.resolve(data));
+            } else if (promiseResult.rejected !== undefined) {
+              const error = deserialize(promiseResult.rejected);
+              return trackPromise(id, Promise.reject(error));
+            } else {
               throw new SeriaError("Unable to resolve promise value");
             }
           } else if (tagValue[0] === Tag.AsyncIterator) {

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { type TrackingAsyncIterable, trackAsyncIterable } from "../trackingAsyncIterable";
-import { forEachPromise, trackResolvedPromise } from "../trackingPromise";
+import { forEachPromise, trackRejectedPromise, trackResolvedPromise } from "../trackingPromise";
 import { STREAMING_DONE } from "./constants";
 import { internal_serialize } from "./internal/serialize";
 import { type Replacers } from "./stringify";
@@ -96,28 +96,44 @@ function createStringifyStream(options: CreateStringifyStreamOptions) {
           controller.enqueue(`${chunk}\n\n`);
         }
 
+        const onPromiseSettled = async (type: "resolved" | "rejected", id: number, data: any) => {
+          const promise = (() => {
+            switch (type) {
+              case "resolved":
+                return trackResolvedPromise(id, data);
+              case "rejected":
+                return trackRejectedPromise(id, data);
+            }
+          })();
+
+          promise.catch(() => null); // This prevent an unhandled error
+
+          // `stringifyAsync` with an initial `id`
+          // We use the initial to set the promise on the correct slot
+          const serializedPromise = internal_serialize(promise, {
+            replacers,
+            initialId: id,
+          });
+
+          await Promise.allSettled(serializedPromise.pendingPromises);
+          const promiseJson = JSON.stringify(serializedPromise.output, null, space);
+
+          if (serializedPromise.pendingIterators.length > 0) {
+            for (const gen of serializedPromise.pendingIterators) {
+              pendingIteratorsMap.set(gen.id, gen);
+            }
+          }
+
+          controller.enqueue(`${promiseJson}\n\n`);
+        };
+
         // Resolve and send all the promises
         await forEachPromise(result.pendingPromises, {
-          async onResolved({ data, id }) {
-            const resolved = trackResolvedPromise(id, data);
-
-            // `stringifyAsync` with an initial `id`
-            // We use the initial to set the promise on the correct slot
-            const serializedPromise = internal_serialize(resolved, {
-              replacers,
-              initialId: id,
-            });
-
-            await Promise.all(serializedPromise.pendingPromises);
-            const promiseJson = JSON.stringify(serializedPromise.output, null, space);
-
-            if (serializedPromise.pendingIterators.length > 0) {
-              for (const gen of serializedPromise.pendingIterators) {
-                pendingIteratorsMap.set(gen.id, gen);
-              }
-            }
-
-            controller.enqueue(`${promiseJson}\n\n`);
+          onResolved({ id, data }) {
+            return onPromiseSettled("resolved", id, data);
+          },
+          async onRejected({ id, error }) {
+            return onPromiseSettled("rejected", id, error);
           },
         });
 
@@ -151,7 +167,7 @@ function createStringifyStream(options: CreateStringifyStreamOptions) {
               });
 
               // FIXME: We should not have any pending promises or async iterators at this point
-              await Promise.all(serializedAsyncIterator.pendingPromises);
+              await Promise.allSettled(serializedAsyncIterator.pendingPromises);
               for await (const _ of serializedAsyncIterator.pendingIterators) {
                 /* */
               }
@@ -161,7 +177,7 @@ function createStringifyStream(options: CreateStringifyStreamOptions) {
             }
           });
 
-          await Promise.all(resolveIterators);
+          await Promise.allSettled(resolveIterators);
         }
 
         controller.close();
