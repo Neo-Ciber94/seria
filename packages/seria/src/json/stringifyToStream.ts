@@ -78,7 +78,7 @@ interface CreateStringifyStreamOptions {
 
 function createStringifyStream(options: CreateStringifyStreamOptions) {
   const { value, replacers, space, splitFromFirstChunk } = options;
-  const result = internal_serialize(value, { replacers, space });
+  const result = internal_serialize(value, { replacers, space }); // We do not deconstruct this because the getter may resolve before have actually any value
   const firstChunk = JSON.stringify(result.output, null, space);
   const pendingIteratorsMap = new Map<number, TrackingAsyncIterable<unknown>>();
   const canStream = result.pendingPromises.length > 0 || result.pendingIterators.length > 0;

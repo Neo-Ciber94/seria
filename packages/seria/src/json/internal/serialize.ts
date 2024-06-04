@@ -191,6 +191,9 @@ export function internal_serialize(value: unknown, opts: SerializeOptions) {
 
   return {
     output,
+
+    // hack: We return a getter instead of the values,
+    // this is because a promise may return generators after resolving
     get pendingPromises() {
       return Array.from(pendingPromisesMap.values());
     },

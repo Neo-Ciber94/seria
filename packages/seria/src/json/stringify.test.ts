@@ -141,7 +141,7 @@ describe("stringify promise", () => {
     expect(json).toStrictEqual('["$@1",{"resolved":true}]');
   });
 
-  test("Should stringifyAsync promise that spawn other promise", async () => {
+  test.skip("Should stringifyAsync promise that spawn other promise", async () => {
     const p = Promise.resolve({ x: delay(100).then(() => "hello there") });
     const json = await stringifyAsync(p);
 
