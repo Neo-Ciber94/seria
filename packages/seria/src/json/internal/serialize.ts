@@ -44,6 +44,7 @@ export function internal_serialize(value: unknown, opts: SerializeOptions) {
   const referencesMap = new Map<object, Reference>();
   const pendingPromisesMap = new Map<number, TrackingPromise<any>>();
   const pendingIteratorsMap = new Map<number, TrackingAsyncIterable<any>>();
+
   const output: unknown[] = [];
   let id = initialId;
 
@@ -123,7 +124,7 @@ export function internal_serialize(value: unknown, opts: SerializeOptions) {
           return serializePromise(input, context);
         } else if (isAsyncIterable(input)) {
           return serializeAsyncIterable(input, context);
-        } else if (input instanceof Error) {
+        } else if (input instanceof Error && !(input instanceof SeriaError)) {
           return serializeError(input, context);
         }
         // Serialize FormData
@@ -324,7 +325,9 @@ function serializePromise(input: Promise<any>, context: SerializeContext) {
 
   // We create a new promise that resolve to the serialized value
   const resolvingPromise = input
-    .then((data) => {
+    .then(async (data) => {
+      // If `data` is an object that have a prop promise we will never be able to resolve that promise
+      // We need to throw an error because currently we cannot resolve nested promises
       const resolved = context.serialize(data);
       context.serializedValues.set(id, { resolved });
       context.checkSerialized(); // Update the values with the new one
@@ -423,3 +426,35 @@ export function serializeTagValue(tag: Tag, value?: number | string) {
 function isAsyncIterable(value: any): value is AsyncIterable<unknown> {
   return value != null && typeof value[Symbol.asyncIterator] === "function";
 }
+
+/*
+ * This is an experiment to get all the values a promise need to be completed
+ * to ensure an stream is not closed before all the promises completed
+ */
+// function getPromiseDependencies(input: unknown) {
+//   if (!input || typeof input !== "object") {
+//     return [];
+//   }
+
+//   const promises: Promise<unknown>[] = [];
+//   const queue: unknown[] = [input];
+
+//   while (queue.length > 0) {
+//     const value = queue.pop();
+
+//     if (value instanceof Promise) {
+//       promises.push(value);
+//     } else if (isPlainObject(value)) {
+//       const entriesValues = Object.values(value);
+//       entriesValues.forEach((x) => queue.push(x));
+//     } else if (Array.isArray(value)) {
+//       value.forEach((x) => queue.push(x));
+//     } else if (value instanceof Set) {
+//       value.forEach((s) => queue.push(s));
+//     } else if (value instanceof Map) {
+//       value.forEach((_, x) => queue.push(x));
+//     }
+//   }
+
+//   return promises;
+// }

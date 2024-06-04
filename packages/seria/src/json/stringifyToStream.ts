@@ -81,7 +81,6 @@ function createStringifyStream(options: CreateStringifyStreamOptions) {
   const result = internal_serialize(value, { replacers, space });
   const firstChunk = JSON.stringify(result.output, null, space);
   const pendingIteratorsMap = new Map<number, TrackingAsyncIterable<unknown>>();
-
   const canStream = result.pendingPromises.length > 0 || result.pendingIterators.length > 0;
 
   function createStreamResume(chunk?: string) {
