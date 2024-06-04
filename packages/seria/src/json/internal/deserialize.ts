@@ -150,7 +150,7 @@ export function internal_deserialize(value: string, opts?: DeserializeOptions) {
           } else if (tagValue[0] === Tag.Promise) {
             const value = indices[id];
 
-            if (value === undefined) {
+            if (value == null) {
               if (deferPromises) {
                 const deferred = deferredPromise();
                 pendingPromises.set(id, deferred);

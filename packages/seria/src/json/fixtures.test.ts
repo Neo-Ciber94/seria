@@ -316,7 +316,23 @@ describe("Basic stringify/parse", () => {
     expect(json).toStrictEqual('["$E1","This is a type error"]');
     const parsed = parse(json) as Error;
     expect(parsed).toStrictEqual(new Error("This is a type error"));
-  })
+  });
+
+  test("Should stringify/parse object with rejected promise", async () => {
+    const obj = {
+      success: Promise.resolve({ anime: "Blue Period" }),
+      failure: Promise.reject("Oh nooo!"),
+    };
+
+    const json = await stringifyAsync(obj);
+    expect(json).toStrictEqual(
+      '["$R1",{"success":"$@2","failure":"$@3"},{"resolved":"$R4"},{"rejected":"$$Oh nooo!"},{"anime":"$$Blue Period"}]',
+    );
+    const value = parse(json) as typeof obj;
+
+    await expect(value.success).resolves.toStrictEqual({ anime: "Blue Period" });
+    await expect(value.failure).rejects.toStrictEqual("Oh nooo!");
+  });
 });
 
 describe("Resumable stream", () => {

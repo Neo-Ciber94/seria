@@ -181,7 +181,7 @@ describe("Parse buffer", () => {
 });
 
 describe("Parse promises", () => {
-  test("Parse stream for array of promises", async () => {
+  test("Parse array of promises", async () => {
     const arr = [
       Promise.resolve("hello"),
       Promise.resolve(new Set([1, 2, 3])),
@@ -280,6 +280,78 @@ describe("Parse promises", () => {
         await expect(promise).resolves.toStrictEqual(await promisesArray[index]);
       }),
     );
+  });
+});
+
+describe("Parse promises from streams", () => {
+  test("Parse stream to value", async () => {
+    const obj = { x: 1, y: "Hello", z: [1, false, 12n] };
+    const stream = stringifyToStream(obj);
+
+    const value = (await parseFromStream(stream)) as typeof obj;
+    expect(value).toStrictEqual({ x: 1, y: "Hello", z: [1, false, 12n] });
+  });
+
+  test("Parse stream to resolved promise", async () => {
+    const p = Promise.resolve(23);
+    const stream = stringifyToStream(p);
+
+    const value = parseFromStream(stream);
+    await expect(value).resolves.toStrictEqual(23);
+  });
+
+  test("Parse stream to rejected promise", async () => {
+    const p = Promise.reject("Error");
+    const stream = stringifyToStream(p);
+
+    const value = parseFromStream(stream);
+    await expect(value).rejects.toStrictEqual("Error");
+  });
+
+  test("Parse stream with promises to value", async () => {
+    const obj = {
+      num: Promise.resolve(23),
+      text: Promise.resolve("Adios"),
+      array: Promise.resolve([]),
+      nested: {
+        x: delay(200).then(() => 2),
+        y: delay(100).then(() => true),
+      },
+    };
+
+    const stream = stringifyToStream(obj);
+    const value = (await parseFromStream(stream)) as typeof obj;
+
+    await expect(value.num).resolves.toStrictEqual(23);
+    await expect(value.text).resolves.toStrictEqual("Adios");
+    await expect(value.array).resolves.toStrictEqual([]);
+    await expect(value.nested.x).resolves.toStrictEqual(2);
+    await expect(value.nested.y).resolves.toStrictEqual(true);
+  });
+
+  test("Parse stream of object with promises", async () => {
+    const obj = {
+      s: Promise.resolve(21),
+      f: Promise.reject("Failure"),
+    };
+
+    const stream = stringifyToStream(obj);
+    const value = (await parseFromStream(stream)) as typeof obj;
+
+    await expect(value.s).resolves.toStrictEqual(21);
+    await expect(value.f).rejects.toStrictEqual("Failure");
+  });
+
+  test("Parse stream of promise than return other promise", async () => {
+    const p = delay(200).then(() => {
+      return { x: delay(100).then(() => "I'm here") };
+    });
+
+    const stream = stringifyToStream(p);
+    const value = (await parseFromStream(stream)) as typeof p;
+
+    const inner = await value;
+    await expect(inner.x).resolves.toStrictEqual("I'm here");
   });
 });
 

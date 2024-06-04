@@ -98,7 +98,7 @@ export async function parseFromStream(stream: ReadableStream<string>, revivers?:
       deferred.reject(new SeriaError("Unable to find resolved value"));
     }
 
-    await Promise.all(promises); // If a promise reject will be here and not in the object?
+    await Promise.allSettled(promises);
   });
 
   return deferred.promise;
