@@ -84,6 +84,7 @@ Types supported by `seria` in comparison with the standard `JSON` object.
 | Symbol         | ✅                    | ❌                   |
 | Set            | ✅                    | ❌                   |
 | Map            | ✅                    | ❌                   |
+| Error          | ✅                    | ❌                   |
 | ArrayBuffer    | ✅                    | ❌                   |
 | TypedArrays\*  | ✅                    | ❌                   |
 | DataView       | ✅                    | ❌                   |
