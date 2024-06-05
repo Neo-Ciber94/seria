@@ -149,15 +149,13 @@ function parsePendingChunks(
           if (isTrackingPromise(data)) {
             const deferred = promisesMap.get(data.id);
 
-            if (!deferred) {
-              throw new SeriaError(`Promise with id: '${data.id}' was not found`);
-            }
-
-            try {
-              const returnValue = await data;
-              deferred.resolve(returnValue);
-            } catch (err) {
-              deferred.reject(err);
+            if (deferred) {
+              try {
+                const returnValue = await data;
+                deferred.resolve(returnValue);
+              } catch (err) {
+                deferred.reject(err);
+              }
             }
           }
         }

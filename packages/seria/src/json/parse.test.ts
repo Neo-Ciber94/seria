@@ -344,7 +344,7 @@ describe("Parse promises from streams", () => {
 
   // FIXME: Currently we are unable to resolve a promise that return an object with other promises,
   // is a weird scenario but it may cause the promise to never resolve
-  test.skip("Parse stream of promise than return other promise", async () => {
+  test("Parse stream of promise than return other promise", async () => {
     const p = delay(200).then(() => ({ x: delay(100).then(() => "I'm here") }));
 
     const stream = stringifyToStream(p);
@@ -423,7 +423,7 @@ describe("Parse async iterator", () => {
     expect((await iter.next()).done).toBeTruthy();
   });
 
-  test("Should parse async iterator with streaming", async () => {
+  test.only("Should parse async iterator with streaming", async () => {
     async function* gen() {
       yield 1;
       yield { kouhai: "Koito Yui" };

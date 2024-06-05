@@ -1,6 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { type TrackingAsyncIterable, trackAsyncIterable } from "../trackingAsyncIterable";
-import { forEachPromise, trackRejectedPromise, trackResolvedPromise } from "../trackingPromise";
+import {
+  forEachPromise,
+  trackRejectedPromise,
+  trackResolvedPromise,
+  type TrackingPromise,
+} from "../trackingPromise";
 import { STREAMING_DONE } from "./constants";
 import { internal_serialize } from "./internal/serialize";
 import { type Replacers } from "./stringify";
@@ -80,8 +85,10 @@ function createStringifyStream(options: CreateStringifyStreamOptions) {
   const { value, replacers, space, splitFromFirstChunk } = options;
   const result = internal_serialize(value, { replacers, space }); // We do not deconstruct this because the getter may resolve before have actually any value
   const firstChunk = JSON.stringify(result.output, null, space);
-  const pendingIteratorsMap = new Map<number, TrackingAsyncIterable<unknown>>();
   const canStream = result.pendingPromises.length > 0 || result.pendingIterators.length > 0;
+
+  const promisesMap = new Map<number, TrackingPromise<unknown>>();
+  let generatorsMap: Map<number, TrackingAsyncIterable<unknown>>;
 
   function createStreamResume(chunk?: string) {
     return new ReadableStream<string>({
@@ -95,89 +102,113 @@ function createStringifyStream(options: CreateStringifyStreamOptions) {
           controller.enqueue(`${chunk}\n\n`);
         }
 
-        const onPromiseSettled = async (type: "resolved" | "rejected", id: number, data: any) => {
-          const promise = (() => {
-            switch (type) {
-              case "resolved":
-                return trackResolvedPromise(id, data);
-              case "rejected":
-                return trackRejectedPromise(id, data);
-            }
-          })();
-
-          promise.catch(() => null); // This prevent an unhandled error
-
-          // `stringifyAsync` with an initial `id`
-          // We use the initial to set the promise on the correct slot
-          const serializedPromise = internal_serialize(promise, {
-            replacers,
-            initialId: id,
-          });
-
-          await Promise.allSettled(serializedPromise.pendingPromises);
-          const promiseJson = JSON.stringify(serializedPromise.output, null, space);
-
-          if (serializedPromise.pendingIterators.length > 0) {
-            for (const gen of serializedPromise.pendingIterators) {
-              pendingIteratorsMap.set(gen.id, gen);
-            }
-          }
-
-          controller.enqueue(`${promiseJson}\n\n`);
-        };
-
-        // Resolve and send all the promises
-        await forEachPromise(result.pendingPromises, {
-          onResolved({ id, data }) {
-            return onPromiseSettled("resolved", id, data);
-          },
-          async onRejected({ id, error }) {
-            return onPromiseSettled("rejected", id, error);
-          },
-        });
-
-        // The resolved promises may return other async generator we need to also resolve
-        if (result.pendingIterators.length > 0) {
-          for (const gen of result.pendingIterators) {
-            pendingIteratorsMap.set(gen.id, gen);
-          }
+        for (const p of result.pendingPromises) {
+          promisesMap.set(p.id, p);
         }
 
-        // Resolve and send all the async generators
-        if (pendingIteratorsMap.size > 0) {
-          const pendingIterators = Array.from(pendingIteratorsMap.values());
-          const resolveIterators = pendingIterators.map(async (iter) => {
-            for await (const next of iter) {
-              // FIXME: We can maybe cache this?
-              const gen = async function* () {
-                yield next;
-              };
+        do {
+          const onPromiseSettled = async (type: "resolved" | "rejected", id: number, data: any) => {
+            const promise = (() => {
+              switch (type) {
+                case "resolved":
+                  return trackResolvedPromise(id, data);
+                case "rejected":
+                  return trackRejectedPromise(id, data);
+              }
+            })();
 
-              const isDone = next === STREAMING_DONE;
-              const resolved = isDone ? next : (next as any).value;
-              const resolvedAsyncIterable = trackAsyncIterable(iter.id, gen(), {
-                resolved,
-                isDone,
-              });
+            promise.catch(() => null); // This prevent an unhandled error
 
-              const serializedAsyncIterator = internal_serialize(resolvedAsyncIterable, {
-                initialId: iter.id,
-                replacers,
-              });
+            // `stringifyAsync` with an initial `id`
+            // We use the initial to set the promise on the correct slot
+            const serializedPromise = internal_serialize(promise, {
+              replacers,
+              initialId: id,
+            });
 
-              // FIXME: We should not have any pending promises or async iterators at this point
-              await Promise.allSettled(serializedAsyncIterator.pendingPromises);
-              for await (const _ of serializedAsyncIterator.pendingIterators) {
-                /* */
+            await Promise.allSettled(serializedPromise.pendingPromises);
+            const promiseJson = JSON.stringify(serializedPromise.output, null, space);
+
+            if (serializedPromise.pendingIterators.length > 0) {
+              for (const gen of serializedPromise.pendingIterators) {
+                generatorsMap.set(gen.id, gen);
+              }
+            }
+
+            if (serializedPromise.pendingPromises.length > 0) {
+              for (const p of serializedPromise.pendingPromises) {
+                promisesMap.set(p.id, p);
+              }
+            }
+
+            promisesMap.delete(id);
+            controller.enqueue(`${promiseJson}\n\n`);
+          };
+
+          // Resolve and send all the promises
+          const pendingPromises = Array.from(promisesMap.values());
+          await forEachPromise(pendingPromises, {
+            onResolved({ id, data }) {
+              return onPromiseSettled("resolved", id, data);
+            },
+            onRejected({ id, error }) {
+              return onPromiseSettled("rejected", id, error);
+            },
+          });
+
+          // The resolved promises may return other async generator we need to also resolve
+          if (!generatorsMap) {
+            generatorsMap = new Map();
+
+            if (result.pendingIterators.length > 0) {
+              for (const gen of result.pendingIterators) {
+                generatorsMap.set(gen.id, gen);
+              }
+            }
+          }
+
+          // Resolve and send all the async generators
+          if (generatorsMap.size > 0) {
+            const pendingIterators = Array.from(generatorsMap.values());
+            const resolveIterators = pendingIterators.map(async (iter) => {
+              for await (const next of iter) {
+                // FIXME: We can maybe cache this?
+                const gen = async function* () {
+                  yield next;
+                };
+
+                const isDone = next === STREAMING_DONE;
+                const resolved = isDone ? next : (next as any).value;
+                const resolvedAsyncIterable = trackAsyncIterable(iter.id, gen(), {
+                  resolved,
+                  isDone,
+                });
+
+                const serializedAsyncIterator = internal_serialize(resolvedAsyncIterable, {
+                  initialId: iter.id,
+                  replacers,
+                });
+
+                // FIXME: We should not have any pending promises or async iterators at this point
+                await Promise.allSettled(serializedAsyncIterator.pendingPromises);
+                for await (const _ of serializedAsyncIterator.pendingIterators) {
+                  /* */
+                }
+
+                for (const p of serializedAsyncIterator.pendingPromises) {
+                  promisesMap.set(p.id, p);
+                }
+
+                const genJson = JSON.stringify(serializedAsyncIterator.output, null, space);
+                controller.enqueue(`${genJson}\n\n`);
               }
 
-              const genJson = JSON.stringify(serializedAsyncIterator.output, null, space);
-              controller.enqueue(`${genJson}\n\n`);
-            }
-          });
+              generatorsMap.delete(iter.id);
+            });
 
-          await Promise.allSettled(resolveIterators);
-        }
+            await Promise.allSettled(resolveIterators);
+          }
+        } while (promisesMap.size > 0 || generatorsMap.size > 0);
 
         controller.close();
       },

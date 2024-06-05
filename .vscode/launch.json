@@ -13,10 +13,10 @@
                 "<node_internals>/**",
                 "**/node_modules/**"
             ],
-            "program": "${workspaceRoot}/packages/seria/node_modules/vitest/vitest.mjs",
+            "program": "${workspaceRoot}/node_modules/vitest/vitest.mjs",
             "args": [
                 "run",
-                "${relativeFile}"
+                "${workspaceRoot}/packages/seria"
             ],
             "smartStep": true,
             "console": "integratedTerminal"
