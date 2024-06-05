@@ -328,7 +328,7 @@ describe("stringify async iterator", () => {
     expect((await reader.read())?.done).toBeTruthy();
   });
 
-  test.only("Should stringifyAsync an async iterator to stream", async () => {
+  test("Should stringifyAsync an async iterator to stream", async () => {
     const gen = async function* () {
       yield 1;
       yield false;
