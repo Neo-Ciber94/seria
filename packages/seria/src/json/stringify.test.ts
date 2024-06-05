@@ -141,12 +141,12 @@ describe("stringify promise", () => {
     expect(json).toStrictEqual('["$@1",{"resolved":true}]');
   });
 
-  test.skip("Should stringifyAsync promise that spawn other promise", async () => {
+  test("Should stringifyAsync promise that spawn other promise", async () => {
     const p = Promise.resolve({ x: delay(100).then(() => "hello there") });
     const json = await stringifyAsync(p);
 
     expect(json).toStrictEqual(
-      '["$@1",{"resolved":"$E4"},{"x":"$@3"},null,"Promise resolved with object containing other promises"]',
+      '["$@1",{"resolved":"$R2"},{"x":"$@3"},{"resolved":"$$hello there"}]',
     );
   });
 
@@ -203,7 +203,7 @@ describe("stringify promise", () => {
     expect((await reader.read()).done).toBeTruthy();
   });
 
-  test.skip("Should stringifyToStream object with rejected promise", async () => {
+  test("Should stringifyToStream object with rejected promise", async () => {
     const obj = {
       success: Promise.resolve(10),
       failure: Promise.reject("Adios amigos"),

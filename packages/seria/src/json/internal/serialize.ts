@@ -334,12 +334,29 @@ function serializePromise(input: Promise<any>, context: SerializeContext) {
       const resolved = context.serialize(data);
       context.serializedValues.set(id, { resolved });
       context.checkSerialized(); // Update the values with the new one
+
+      /**
+       * FIXME: If the promise resolved value is an object that contains other promises
+       * we need to ensure those promises are resolved as well, otherwise they may hang
+       * and never complete when streaming, this may not fully cover all posible scenarios
+       */
+      const deps = getPromiseDependencies(data);
+      if (deps.length > 0) {
+        await Promise.allSettled(deps);
+      }
       return data;
     })
-    .catch((error) => {
+    .catch(async (error) => {
       const rejected = context.serialize(error);
       context.serializedValues.set(id, { rejected });
       context.checkSerialized(); // Update the values with the new one
+
+      // This is a weird edge case, but may happen
+      const deps = getPromiseDependencies(error);
+      if (deps.length > 0) {
+        await Promise.allSettled(deps);
+      }
+
       throw error; // We need to rethrow the error, this is an error that should be caught upstream
     });
 
@@ -434,30 +451,30 @@ function isAsyncIterable(value: any): value is AsyncIterable<unknown> {
  * This is an experiment to get all the values a promise need to be completed
  * to ensure an stream is not closed before all the promises completed
  */
-// function getPromiseDependencies(input: unknown) {
-//   if (!input || typeof input !== "object") {
-//     return [];
-//   }
+function getPromiseDependencies(input: unknown) {
+  if (!input || typeof input !== "object") {
+    return [];
+  }
 
-//   const promises: Promise<unknown>[] = [];
-//   const queue: unknown[] = [input];
+  const promises: Promise<unknown>[] = [];
+  const queue: unknown[] = [input];
 
-//   while (queue.length > 0) {
-//     const value = queue.pop();
+  while (queue.length > 0) {
+    const value = queue.pop();
 
-//     if (value instanceof Promise) {
-//       promises.push(value);
-//     } else if (isPlainObject(value)) {
-//       const entriesValues = Object.values(value);
-//       entriesValues.forEach((x) => queue.push(x));
-//     } else if (Array.isArray(value)) {
-//       value.forEach((x) => queue.push(x));
-//     } else if (value instanceof Set) {
-//       value.forEach((s) => queue.push(s));
-//     } else if (value instanceof Map) {
-//       value.forEach((_, x) => queue.push(x));
-//     }
-//   }
+    if (value instanceof Promise) {
+      promises.push(value);
+    } else if (isPlainObject(value)) {
+      const entriesValues = Object.values(value);
+      entriesValues.forEach((x) => queue.push(x));
+    } else if (Array.isArray(value)) {
+      value.forEach((x) => queue.push(x));
+    } else if (value instanceof Set) {
+      value.forEach((s) => queue.push(s));
+    } else if (value instanceof Map) {
+      value.forEach((_, x) => queue.push(x));
+    }
+  }
 
-//   return promises;
-// }
+  return promises;
+}
