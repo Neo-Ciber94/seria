@@ -3,8 +3,8 @@ import { test, describe, expect } from "vitest";
 import { stringify } from "./stringify";
 import { parse } from "./parse";
 import { stringifyAsync } from "./stringifyAsync";
-import { stringifyToResumableStream } from "./stringifyToStream";
-import { parseFromResumableStream } from "./parseFromStream";
+import { stringifyToResumableStream, stringifyToStream } from "./stringifyToStream";
+import { parseFromResumableStream, parseFromStream } from "./parseFromStream";
 import { delay } from "../utils";
 
 describe("Basic stringify/parse", () => {
@@ -335,7 +335,28 @@ describe("Basic stringify/parse", () => {
   });
 });
 
-describe("Resumable stream", () => {
+describe("Streaming", () => {
+  test(
+    "Should stringify/parse out of order streaming",
+    async () => {
+      const arr = [
+        delay(Math.random() * 500).then(() => true),
+        delay(Math.random() * 500).then(() => "Hello"),
+        delay(Math.random() * 500).then(() => ({ x: 1, y: -2 })),
+      ];
+
+      const stream = stringifyToStream(arr);
+      const value = (await parseFromStream(stream)) as typeof arr;
+
+      await expect(value[0]).resolves.toStrictEqual(true);
+      await expect(value[1]).resolves.toStrictEqual("Hello");
+      await expect(value[2]).resolves.toStrictEqual({ x: 1, y: -2 });
+    },
+    { repeats: 3 },
+  );
+});
+
+describe("Resumable stream ", () => {
   test("Should stringify/parse object as resumable stream without pending values", () => {
     const obj = { a: 23, b: "Mori", c: true };
     const { json, resumeStream } = stringifyToResumableStream(obj);
