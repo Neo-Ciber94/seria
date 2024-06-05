@@ -88,7 +88,8 @@ function createStringifyStream(options: CreateStringifyStreamOptions) {
   const canStream = result.pendingPromises.length > 0 || result.pendingIterators.length > 0;
 
   const promisesMap = new Map<number, TrackingPromise<unknown>>();
-  let generatorsMap: Map<number, TrackingAsyncIterable<unknown>>;
+  const generatorsMap = new Map<number, TrackingAsyncIterable<unknown>>();
+  let pendingResultGenerators = false;
 
   function createStreamResume(chunk?: string) {
     return new ReadableStream<string>({
@@ -157,8 +158,8 @@ function createStringifyStream(options: CreateStringifyStreamOptions) {
           });
 
           // The resolved promises may return other async generator we need to also resolve
-          if (!generatorsMap) {
-            generatorsMap = new Map();
+          if (!pendingResultGenerators) {
+            pendingResultGenerators = true;
 
             if (result.pendingIterators.length > 0) {
               for (const gen of result.pendingIterators) {
