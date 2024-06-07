@@ -7,23 +7,8 @@ import { type Revivers } from "../json/parse";
 import { Tag, isTypedArrayTag } from "../tag";
 import { isPlainObject, base64ToBuffer, getType } from "../utils";
 
-// The browser `FormData` is assignable to this one
-import type { FormData as UndiciFormData } from "undici";
-
 type DecodeContext = {
   encoded: FormData;
-};
-
-type DecodeOptions = {
-  /**
-   * Custom type constructors to use.
-   */
-  types?: {
-    /**
-     * `FormData` constructor, this defaults to `globalThis.FormData`.
-     */
-    FormData: typeof UndiciFormData;
-  };
 };
 
 /**
@@ -32,13 +17,7 @@ type DecodeOptions = {
  * @param reviver Converts a value.
  * @returns The decoded value.
  */
-export function decode(
-  encoded: FormData,
-  revivers?: Revivers | null,
-  opts?: DecodeOptions,
-): unknown {
-  const { types } = opts || {};
-  const { FormData: FormDataConstructor = globalThis.FormData } = types || {};
+export function decode(encoded: FormData, revivers?: Revivers | null): unknown {
   const references = new Map<string, any>();
 
   const value = (function () {
@@ -206,7 +185,7 @@ export function decode(
               throw new SeriaError("Failed to parse async iterator, expected array of values");
             }
           } else if (tagValue[0] === Tag.FormData) {
-            const formData = new FormDataConstructor();
+            const formData = new FormData();
 
             encoded.forEach((entry, key) => {
               const entryKey = `${id}_`;

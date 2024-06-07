@@ -6,7 +6,6 @@ import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { decode, encodeAsync } from "../src/form-data";
 import fs from "fs";
 import path from "path";
-import { FormData as UndiciFormData } from "undici";
 
 const PORT = 5002;
 type Server = ReturnType<typeof serve>;
@@ -34,11 +33,7 @@ beforeAll(() => {
 
   app.post("/upload", async (c) => {
     const formData = await c.req.formData();
-    const value = decode(formData as FormData, null, {
-      types: {
-        FormData: UndiciFormData,
-      },
-    }) as BocchiCharacter;
+    const value = decode(formData as FormData, null) as BocchiCharacter;
 
     // Set the mocked value
     mockCharacter = value;

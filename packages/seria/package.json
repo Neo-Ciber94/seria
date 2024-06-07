@@ -54,7 +54,6 @@
     "tsup": "^8.0.2",
     "tsx": "^4.7.1",
     "typescript": "^5.4.2",
-    "undici": "^6.10.1",
     "vitest": "1.4.0"
   },
   "sideEffects": false,
