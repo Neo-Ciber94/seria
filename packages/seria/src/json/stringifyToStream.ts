@@ -90,9 +90,13 @@ function createStringifyStream(options: CreateStringifyStreamOptions) {
   const promisesMap = new Map<number, TrackingPromise<unknown>>();
   const generatorsMap = new Map<number, TrackingAsyncIterable<unknown>>();
   let pendingResultGenerators = false;
+  let isClosed = false;
 
   function createStreamResume(chunk?: string) {
     return new ReadableStream<string>({
+      cancel() {
+        isClosed = true;
+      },
       async start(controller) {
         /*
          * The first chunk is the first serialized value, this may be either:
@@ -143,7 +147,10 @@ function createStringifyStream(options: CreateStringifyStreamOptions) {
             }
 
             promisesMap.delete(id);
-            controller.enqueue(`${promiseJson}\n\n`);
+
+            if (!isClosed) {
+              controller.enqueue(`${promiseJson}\n\n`);
+            }
           };
 
           // Resolve and send all the promises
@@ -201,7 +208,10 @@ function createStringifyStream(options: CreateStringifyStreamOptions) {
                 }
 
                 const genJson = JSON.stringify(serializedAsyncIterator.output, null, space);
-                controller.enqueue(`${genJson}\n\n`);
+
+                if (!isClosed) {
+                  controller.enqueue(`${genJson}\n\n`);
+                }
               }
 
               generatorsMap.delete(iter.id);
@@ -212,6 +222,7 @@ function createStringifyStream(options: CreateStringifyStreamOptions) {
         } while (promisesMap.size > 0 || generatorsMap.size > 0);
 
         controller.close();
+        isClosed = true;
       },
     });
   }
