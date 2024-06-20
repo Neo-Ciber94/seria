@@ -13,7 +13,11 @@
     "noFallthroughCasesInSwitch": true,
     "module": "esnext",
     "moduleResolution": "bundler",
-    "lib": ["esnext", "DOM", "DOM.Iterable"],
+    "lib": [
+      "esnext",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "outDir": "dist",
     "stripInternal": true
   },
@@ -25,7 +29,10 @@
     "tsup.config.ts",
     "setupTests.ts",
     "vitest.config.mts",
-    "copyNpmFiles.ts"
+    "copyPublishFiles.ts"
   ],
-  "exclude": ["dist", "node_modules"]
+  "exclude": [
+    "dist",
+    "node_modules"
+  ]
 }
